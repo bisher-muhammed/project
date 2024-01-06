@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Wallet</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        header {
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            padding: 1em;
+        }
+
+        .wallet-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .balance {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .transaction-list {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .transaction-item {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .add-money-button {
+            background-color: red;
+            color: white;
+            padding: 12px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        /* Add hover effect for the button */
+        .add-money-button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Your Wallet</h1>
+    </header>
+
+    <div class="balance">
+        Your Wallet Balance: ₹{{ user_wallet.balance }}
+        <p>Updated Wallet Balance: ₹{{ updated_wallet_balance|floatformat:2 }}</p>
+        
+        
+    </div>
+    
+    
+    {% if order_list %}
+        <h2>Recent Transactions</h2>
+        <ul class="transaction-list">
+            {% for order in order_list %}
+            {% if order.status == "Returned" or order.status == "Cancelled" %}
+                    <li class="transaction-item">
+                        <span>Date: {{ order.created_at }}</span>
+                        <span>Product: {{ order.product_name }}</span>
+                        <span>Amount: ₹{{ order.order_total|floatformat:2 }}</span>
+                    </li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="no-transactions">No recent transactions.</p>
+    {% endif %}
+    
+    <button class="add-money-button">Add Money</button>

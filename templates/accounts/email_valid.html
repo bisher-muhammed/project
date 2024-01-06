@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate OTP</title>
+
+    <!-- Add Bootstrap CSS link -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <!-- Add any additional styling or link to a CSS file if needed -->
+</head>
+<style>
+.otp-field {
+    flex-direction: row;
+    column-gap: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .otp-field input {
+    height: 45px;
+    width: 42px;
+    border-radius: 6px;
+    outline: none;
+    font-size: 1.125rem;
+    text-align: center;
+    border: 1px solid #ddd;
+  }
+  .otp-field input:focus {
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
+  }
+  .otp-field input::-webkit-inner-spin-button,
+  .otp-field input::-webkit-outer-spin-button {
+    display: none;
+  }
+  
+  .resend {
+    font-size: 12px;
+  }
+  
+  .footer {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    color: black;
+    font-size: 12px;
+    text-align: right;
+    font-family: monospace;
+  }
+  
+  .footer a {
+    color: black;
+    text-decoration: none;
+  }
+</style>
+  
+<body class="container-fluid bg-body-tertiary d-block">
+    <div class="row justify-content-center mt-5">
+        <div class="col-12 col-md-6 col-lg-4" style="min-width: 500px;">
+            <div class="card border-primary mb-3">
+                <div class="card-body">
+                    <h2 class="mb-4">Generate OTP</h2>
+                    
+                    <form method="post" action="{% url 'email_valid' %}" class="mb-4">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Enter your email:</label>
+                            <input type="email" id="email" name="email" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary mb-3">Generate OTP</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+
+    <!-- Add Bootstrap JS and any additional JavaScript if needed -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

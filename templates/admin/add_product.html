@@ -1,0 +1,189 @@
+{% extends "admin_base.html" %}
+{% load static %}
+
+{% block content %}
+<section class="content-main">
+    <div class="row">
+        <div class="col-9">
+            <div class="content-header">
+                <h2 class="content-title">Add New Product</h2>
+                <div>
+                    <button class="btn btn-light rounded font-sm mr-5 text-body hover-up">Save to draft</button>
+                    <button class="btn btn-md rounded font-sm hover-up">Publish</button>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <form method="post" action="{% url 'add_product' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4>Basic</h4>
+                    </div>
+                    <div class="card-body">
+                        {% if error_message %}
+                            <div class="alert alert-danger" role="alert">
+                                {{ error_message }}
+                            </div>
+                        {% endif %}
+                        <div class="mb-4">
+                            <label for="product_name" class="form-label">Product Name</label>
+                            <input type="text" name="product_name" class="form-control" id="product_name" required>
+                        </div>
+                        <div>
+                            <label class="form-label">Full description</label>
+                            <textarea placeholder="Type here" name="product_description" class="form-control" rows="4" required>{{ form_data.product_description|default:'' }}</textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-lg-4">
+                                <div class="mb-4">
+                                    <label class="form-label">Regular price</label>
+                                    <div class="row gx-2">
+                                        <input placeholder="" type="text" name="original_price" class="form-control" id="original_price" value="{{ form_data.original_price|default:'' }}" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-4">
+                                <div class="mb-4">
+                                    <label class="form-label">Promotional price</label>
+                                    <input placeholder="$" type="text" name="offer_price" class="form-control" id="offer_price" value="{{ form_data.offer_price|default:'' }}" required>
+                                </div>
+                            </div>
+                            <div class="col-lg-4">
+                                <label class="form-label">Category</label>
+                                <select name="product_category" class="form-select" required>
+                                    <option value="" disabled selected>Select a category</option>
+                                    {% for category in categories %}
+                                        {% if category.is_blocked %}
+                                            <option value="{{ category.id }}">{{ category.category_name }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label for="product_brand" class="form-label">Brand</label>
+                            <select name="product_brand" class="form-select" required>
+                                <option value="" disabled selected>Select a Brand</option>
+                                {% for brand in brands %}
+                                    {% if brand.is_active %}
+                                        <option value="{{ brand.id }}">{{ brand.brand_name }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <!-- For Size -->
+                        <div class="mb-4">
+                            <label for="sizes" class="form-label">Size</label>
+                            {% for size_option in size_options %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="sizes" value="{{ size_option.id }}" id="size_{{ size_option.id }}">
+                                    <label class="form-check-label" for="size_{{ size_option.id }}">
+                                        {{ size_option.name }}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- For Color -->
+                        <div class="mb-4">
+                            <label for="colors" class="form-label">Color</label>
+                            {% for color_option in color_options %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="colors" value="{{ color_option.id }}" id="color_{{ color_option.id }}">
+                                    <label class="form-check-label" for="color_{{ color_option.id }}">
+                                        {{ color_option.name }}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <label class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" value="">
+                            <span class="form-check-label">accept terms&codetions</span>
+                        </label>
+                    </div>
+                </div> <!-- card end// -->
+
+                <!-- Product Image 1 -->
+                <div class="card-body">
+                    <div class="input-upload aspect-ratio-container" data-aspect-ratio="1/1">
+                        {% if product.product_img1 %}
+                            <img src="{{ product.product_img1.url }}" alt="Product Image 1" class="img-fluid">
+                        {% else %}
+                            <img src="{% static 'assets/imgs/theme/upload.svg' %}" alt="" class="img-fluid">
+                        {% endif %}
+                        <input placeholder="" type="file" name="product_img1" class="form-control" id="product_img1" value="{{ form_data.product_img1|default:'' }}" required>
+
+                        <!-- Hidden inputs for Cropper.js data -->
+                        <input type="hidden" name="product_img1_x" id="product_img1_x">
+                        <input type="hidden" name="product_img1_y" id="product_img1_y">
+                        <input type="hidden" name="product_img1_width" id="product_img1_width">
+                        <input type="hidden" name="product_img1_height" id="product_img1_height">
+                    </div>
+                </div>
+
+                <!-- Product Image 2 -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="input-upload aspect-ratio-container" data-aspect-ratio="1/1">
+                            {% if product.product_img2 %}
+                                <img src="{{ product.product_img2.url }}" alt="Product Image 2" class="img-fluid">
+                            {% else %}
+                                <img src="{% static 'assets/imgs/theme/upload.svg' %}" alt="" class="img-fluid">
+                            {% endif %}
+                            <input class="form-control" type="file" name="product_img2" id="product_img2" value="{{ form_data.product_img2|default:'' }}" required>
+
+                            <!-- Hidden inputs for Cropper.js data -->
+                            <input type="hidden" name="product_img2_x" id="product_img2_x">
+                            <input type="hidden" name="product_img2_y" id="product_img2_y">
+                            <input type="hidden" name="product_img2_width" id="product_img2_width">
+                            <input type="hidden" name="product_img2_height" id="product_img2_height">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product Image 3 -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="input-upload aspect-ratio-container" data-aspect-ratio="1/1">
+                            {% if product.product_img3 %}
+                                <img src="{{ product.product_img3.url }}" alt="Product Image 3" class="img-fluid">
+                            {% else %}
+                                <img src="{% static 'assets/imgs/theme/upload.svg' %}" alt="" class="img-fluid">
+                            {% endif %}
+                            <input class="form-control" name="product_img3" type="file" value="{{ form_data.product_img3|default:'' }}" required>
+
+                            <!-- Hidden inputs for Cropper.js data -->
+                            <input type="hidden" name="product_img3_x" id="product_img3_x">
+                            <input type="hidden" name="product_img3_y" id="product_img3_y">
+                            <input type="hidden" name="product_img3_width" id="product_img3_width">
+                            <input type="hidden" name="product_img3_height" id="product_img3_height">
+                        </div>
+                    </div>
+                </div>
+
+                <input type="submit" class="btn btn-primary" value="Save">
+            </form>
+        </div>
+    </div>
+</section>
+
+<script src="path/to/cropper.js"></script>
+<script>
+    // Initialize Cropper.js on the image elements
+    ['product_img1', 'product_img2', 'product_img3'].forEach(function (field) {
+        const cropper = new Cropper(document.getElementById(field), {
+            aspectRatio: 1,  // Set your desired aspect ratio
+            viewMode: 2,     // Set your desired view mode
+            crop(event) {
+                // Update hidden input fields with cropping data
+                document.getElementById(`${field}_x`).value = Math.round(event.detail.x);
+                document.getElementById(`${field}_y`).value = Math.round(event.detail.y);
+                document.getElementById(`${field}_width`).value = Math.round(event.detail.width);
+                document.getElementById(`${field}_height`).value = Math.round(event.detail.height);
+            },
+        });
+    });
+</script>
+{% endblock content %}
