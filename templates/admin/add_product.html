@@ -14,7 +14,7 @@
             </div>
         </div>
         <div class="col-lg-6">
-            <form method="post" action="{% url 'add_product' %}" enctype="multipart/form-data">
+            <form method="post" action="{% url 'add_product' %}" enctype="multipart/form-data" id="productForm">
                 {% csrf_token %}
                 <div class="card mb-4">
                     <div class="card-header">
@@ -106,7 +106,7 @@
                 </div> <!-- card end// -->
 
                 <!-- Product Image 1 -->
-                <div class="card-body">
+                {% comment %} <div class="card-body">
                     <div class="input-upload aspect-ratio-container" data-aspect-ratio="1/1">
                         {% if product.product_img1 %}
                             <img src="{{ product.product_img1.url }}" alt="Product Image 1" class="img-fluid">
@@ -121,10 +121,48 @@
                         <input type="hidden" name="product_img1_width" id="product_img1_width">
                         <input type="hidden" name="product_img1_height" id="product_img1_height">
                     </div>
-                </div>
+                </div> {% endcomment %}
+
+                    <div id="imageContainer1">
+                        <label class="form-label">Image 1</label>
+                        <input class="form-control" type="file" id="image1" name="image1">
+                        <div id="imageWrapper1" style="display: none;">
+                            <img id="imagePreview1" src="#" alt="Preview" style="max-width: 100%; margin-top: 10px;">
+                            <button type="button" id="cropButton1" class="btn btn-primary small-btn">Crop</button>
+                        </div>
+                        <input type="hidden" name="crop_x1" id="cropX1">
+                        <input type="hidden" name="crop_y1" id="cropY1">
+                        <input type="hidden" name="crop_width1" id="cropWidth1">
+                        <input type="hidden" name="crop_height1" id="cropHeight1">
+                    </div>
+                    <div id="imageContainer2">
+                        <label class="form-label">Image 2</label>
+                        <input class="form-control" type="file" id='image2' name='image2'>
+                        <div id="imageWrapper2" style="display: none;">
+                            <img id="imagePreview2" src="#" alt="Preview" style="max-width: 100%; margin-top: 10px;">
+                            <button type="button" id="cropButton2" class="btn btn-primary small-btn">Crop</button>
+                        </div>
+                        <input type="hidden" name="crop_x2" id="cropX2">
+                        <input type="hidden" name="crop_y2" id="cropY2">
+                        <input type="hidden" name="crop_width2" id="cropWidth2">
+                        <input type="hidden" name="crop_height2" id="cropHeight2">
+                    </div>
+                    <div id="imageContainer3">
+                        <label class="form-label">Image 3</label>
+                        <input class="form-control" type="file" id='image3' name='image3'>
+                        <div id="imageWrapper3" style="display: none;">
+                            <img id="imagePreview3" src="#" alt="Preview" style="max-width: 100%; margin-top: 10px;">
+                            <button type="button" id="cropButton3" class="btn btn-primary small-btn">Crop</button>
+                        </div>
+                        <input type="hidden" name="crop_x3" id="cropX3">
+                        <input type="hidden" name="crop_y3" id="cropY3">
+                        <input type="hidden" name="crop_width3" id="cropWidth3">
+                        <input type="hidden" name="crop_height3" id="cropHeight3">
+                    </div>
+            
 
                 <!-- Product Image 2 -->
-                <div class="card mb-4">
+                {% comment %} <div class="card mb-4">
                     <div class="card-body">
                         <div class="input-upload aspect-ratio-container" data-aspect-ratio="1/1">
                             {% if product.product_img2 %}
@@ -161,7 +199,7 @@
                             <input type="hidden" name="product_img3_height" id="product_img3_height">
                         </div>
                     </div>
-                </div>
+                </div> {% endcomment %}
 
                 <input type="submit" class="btn btn-primary" value="Save">
             </form>
@@ -169,8 +207,83 @@
     </div>
 </section>
 
-<script src="path/to/cropper.js"></script>
+{% comment %} <script src="path/to/cropper.js"></script> {% endcomment %}
+
+<!-- Add Cropper.js library -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+
+<!-- Add this script to your HTML file -->
 <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var form = document.getElementById('productForm');
+        var croppers = [];
+
+        function initializeCropper(imageIndex) {
+            var input = document.getElementById('image' + imageIndex);
+            var cropButton = document.getElementById('cropButton' + imageIndex);
+            var imageContainer = document.getElementById('imageContainer' + imageIndex);
+            var imageWrapper = document.getElementById('imageWrapper' + imageIndex);
+
+            var cropper;
+
+            input.addEventListener('change', function (e) {
+                var file = e.target.files[0];
+                var reader = new FileReader();
+
+                reader.onload = function (event) {
+                    // Show the image container
+                    imageContainer.style.display = 'block';
+
+                    // Show the image wrapper
+                    imageWrapper.style.display = 'block';
+
+                    var image = document.getElementById('imagePreview' + imageIndex);
+                    image.src = event.target.result;
+
+                    // Set up Cropper.js after the image has loaded
+                    image.onload = function () {
+                        croppers[imageIndex] = new Cropper(image, {
+                            aspectRatio: 16 / 9,  // Set your desired aspect ratio
+                            crop: function (event) {
+                                // Update hidden input fields with cropping data
+                                document.getElementById('cropX' + imageIndex).value = event.detail.x;
+                                document.getElementById('cropY' + imageIndex).value = event.detail.y;
+                                document.getElementById('cropWidth' + imageIndex).value = event.detail.width;
+                                document.getElementById('cropHeight' + imageIndex).value = event.detail.height;
+                            }
+                        });
+                    };
+                };
+
+                reader.readAsDataURL(file);
+            });
+
+            cropButton.addEventListener('click', function () {
+                // Trigger manual crop
+                croppers[imageIndex].crop();
+
+                // Hide the image wrapper
+                imageWrapper.style.display = 'none';
+            });
+        }
+
+        // Initialize croppers for each image
+        for (var i = 1; i <= 3; i++) {
+            initializeCropper(i);
+        }
+
+        form.addEventListener('submit', function () {
+            // Do additional form validation if needed
+            // Submit the form
+            form.submit();
+        });
+    });
+</script>
+
+
+{% comment %} <script>
     // Initialize Cropper.js on the image elements
     ['product_img1', 'product_img2', 'product_img3'].forEach(function (field) {
         const cropper = new Cropper(document.getElementById(field), {
@@ -185,5 +298,5 @@
             },
         });
     });
-</script>
+</script> {% endcomment %}
 {% endblock content %}

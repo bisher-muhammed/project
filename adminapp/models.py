@@ -2,6 +2,7 @@ from django.db import models
 from django.core.validators import MinValueValidator
 from django.contrib.auth.models import User
 from django.db.models import F, Sum
+from image_cropping import ImageRatioField, ImageCropField
 
 
 class  Category(models.Model):

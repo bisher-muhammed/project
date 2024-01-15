@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     'user',
     'colorfield',
     'core',
-    'matplotlib'
+    'matplotlib',
+    'image_cropping',
     
    
 
