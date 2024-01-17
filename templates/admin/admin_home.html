@@ -106,8 +106,8 @@
     document.addEventListener('DOMContentLoaded', function () {
         // Monthly Orders Chart
         var monthlyOrdersChartCanvas = document.getElementById('monthly-orders-chart');
-        var monthlyOrdersChart; // Declare chart variable outside the function
-    
+        var monthlyOrdersChart;
+
         if (monthlyOrdersChartCanvas) {
             monthlyOrdersChart = new Chart(monthlyOrdersChartCanvas, {
                 type: 'bar',
@@ -126,34 +126,31 @@
         } else {
             console.error('Monthly Orders Chart Canvas not found.');
         }
-    
+
         var changeLabelsButton = document.getElementById('changeLabelsButton');
         var changeLabelsButton1 = document.getElementById('changeLabelsButton1');
-    
+
         changeLabelsButton.addEventListener('click', function () {
-            // Update chart labels
-            monthlyOrdersChart.data.labels = [ '2023', '2024'];
-            monthlyOrdersChart.data.datasets[0].data  = [{% for item in yearly_orders %}{{ item.yearly_orders }}{% if not forloop.last %},{% endif %}{% endfor %}];
-            monthlyOrdersChart.data.datasets[0].label  = "Yearly Order";
-    
+            // Update chart labels for yearly orders with years
+            monthlyOrdersChart.data.labels = [{% for item in yearly_orders %}'{{ item.year }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+            monthlyOrdersChart.data.datasets[0].data = [{% for item in yearly_orders %}{{ item.yearly_orders }}{% if not forloop.last %},{% endif %}{% endfor %}];
+            monthlyOrdersChart.data.datasets[0].label = "Yearly Order";
+
             // Update the chart
             monthlyOrdersChart.update();
         });
-    
+
         changeLabelsButton1.addEventListener('click', function () {
-            // Update chart labels
+            // Update chart labels for monthly orders
             monthlyOrdersChart.data.labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            monthlyOrdersChart.data.datasets[0].data  = [{% for item in monthly_orders %}{{ item.monthly_orders }}{% if not forloop.last %},{% endif %}{% endfor %}];
-            monthlyOrdersChart.data.datasets[0].label  = "Monthly Order";
-    
+            monthlyOrdersChart.data.datasets[0].data = [{% for item in monthly_orders %}{{ item.monthly_orders }}{% if not forloop.last %},{% endif %}{% endfor %}];
+            monthlyOrdersChart.data.datasets[0].label = "Monthly Order";
+
             // Update the chart
             monthlyOrdersChart.update();
         });
     });
-    
-    
 </script>
-
                 
                 
             </div>

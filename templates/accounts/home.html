@@ -796,38 +796,25 @@
             <!--End tab-content-->
         </div>
     </section>
-    <section class="banner-2 section-padding pb-0">
-        <div class="container">
-            <div class="banner-img banner-big wow fadeIn animated f-none">
-                <img src="{% static 'user/assets/imgs/banner/banner-4.png'%}" alt="">
-                <div class="banner-text d-md-block d-none">
-                    <h4 class="mb-15 mt-40 text-brand">Repair Services</h4>
-                    <h1 class="fw-600 mb-20">We're an Apple <br>Authorised Service Provider</h1>
-                    <a href="shop-grid-right.html" class="btn">Learn More <i class="fi-rs-arrow-right"></i></a>
+    {% for banner in banners %}
+    {% if banner.subtitle == "banner.1" %}
+        <section class="banner-2 section-padding pb-0">
+            <div class="container">
+                <div class="banner-img banner-big wow fadeIn animated f-none">
+                    <img src="{{ banner.banner_img.url }}" alt="">
+                    <div class="banner-text d-md-block d-none">
+                        <h4 class="mb-15 mt-40 text-brand">{{ banner.subtitle }}</h4>
+                        <h1 class="fw-600 mb-20">{{ banner.title }}</h1>
+                        <a href="{% url 'product_list' %}" class="btn btn-outline-white">
+                            <span>SHOP NOW</span>
+                            <i class="icon-long-arrow-right"></i>
+                        </a>
+                    </div>
                 </div>
             </div>
-        </div>
-    </section>
-    <section class="popular-categories section-padding mt-15 mb-25">
-        <div class="container wow fadeIn animated">
-            <h3 class="section-title mb-20"><span>Popular</span> Categories</h3>
-            <div class="carausel-6-columns-cover position-relative">
-                <div class="slider-arrow slider-arrow-2 carausel-6-columns-arrow" id="carausel-6-columns-arrows"></div>
-                <div class="carausel-6-columns" id="carausel-6-columns">
-                    {% for category in category_list %}
-                        <div class="card-1">
-                            <figure class="img-hover-scale overflow-hidden">
-                                
-                                    <img src="{{ category.category_image.url }}" alt="{{ category.name }}">
-                                </a>
-                            </figure>
-                            <h5> {{ category.category_name }}</h5>
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-    </section>
+        </section>
+    {% endif %}
+{% endfor %}
     <section class="banners mb-15">
         <div class="container">
             <div class="row">
@@ -1874,20 +1861,109 @@
             </div>
         </div>
     </section>
-    <section class="mb-50">
-        <div class="container">
-            <div class="row">
-                <div class="col-12">
-                    <div class="banner-bg wow fadeIn animated" style="background-image: url('{% static 'user/assets/imgs/banner/banner-8.jpg'%}')">
-                        <div class="banner-content">
-                            <h5 class="text-grey-4 mb-15">Shop Today’s Deals</h5>
-                            <h2 class="fw-600">Happy <span class="text-brand">Mother's Day</span>. Big Sale Up to 40%</h2>
+    {% for banner in banners %}
+    {% if banner.subtitle == "banner2" %}
+        <section class="mb-50">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="banner-bg wow fadeIn animated" style="background-image: url({{ banner.banner_img.url }})">
+                            <div class="banner-content">
+                                <h5 class="text-grey-4 mb-15">{{ banner.subtitle }}</h5>
+                                <h2 class="fw-600">{{ banner.title }}</h2>
+                                <div class="countdown-boxes">
+                                    <div class="countdown-box">
+                                        <span id="days_{{ banner.id }}" class="countdown-digit"></span>
+                                        <span class="countdown-label">Days</span>
+                                    </div>
+                                    <div class="countdown-box">
+                                        <span id="hours_{{ banner.id }}" class="countdown-digit"></span>
+                                        <span class="countdown-label">Hours</span>
+                                    </div>
+                                    <div class="countdown-box">
+                                        <span id="minutes_{{ banner.id }}" class="countdown-digit"></span>
+                                        <span class="countdown-label">Minutes</span>
+                                    </div>
+                                    <div class="countdown-box">
+                                        <span id="seconds_{{ banner.id }}" class="countdown-digit"></span>
+                                        <span class="countdown-label">Seconds</span>
+                                    </div>
+                                </div>
+                                <a href="{% url 'product_list' %}" class="btn btn-outline-white">
+                                    <span>SHOP NOW</span>
+                                    <i class="icon-long-arrow-right"></i>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
+
+        <style>
+            .countdown-boxes {
+                display: flex;
+                justify-content: space-around;
+                padding: 10px;
+            }
+        
+            .countdown-box {
+                text-align: center;
+            }
+        
+            .countdown-digit {
+                font-size: 48px;
+                font-weight: bold;
+                opacity: 0.8;
+                display: block;
+                background-color: #F7C5CC;
+                color: #CC313D;
+                padding: 10px;
+                border-radius: 8px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            }
+        
+            .countdown-label {
+                font-size: 14px;
+                font-weight: bold;
+                opacity: 0.6;
+            }
+        </style>
+
+        <script>
+            // Calculate end time (7 days from banner creation)
+            var endTime = new Date("{{ banner.created_at|date:'Y-m-d H:i:s' }}");
+            endTime.setDate(endTime.getDate() + 7);
+            endTime = endTime.getTime();
+            var countdownId = "{{ banner.id }}";
+
+            // Update countdown every second
+            setInterval(function () {
+                var now = new Date().getTime();
+                var timeLeft = endTime - now;
+
+                var days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+                var hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                var minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                var seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+                // Format digits with leading zeros
+                hours = hours.toString().padStart(2, '0');
+                minutes = minutes.toString().padStart(2, '0');
+                seconds = seconds.toString().padStart(2, '0');
+
+                // Display remaining time
+                document.getElementById(`days_${countdownId}`).innerHTML = days;
+                document.getElementById(`hours_${countdownId}`).innerHTML = hours;
+                document.getElementById(`minutes_${countdownId}`).innerHTML = minutes;
+                document.getElementById(`seconds_${countdownId}`).innerHTML = seconds;
+
+            }, 1000);
+        </script>
+    {% endif %}
+{% endfor %}
+
+
     <section class="mb-45">
         <div class="container">
             <div class="row">

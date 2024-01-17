@@ -1,5 +1,5 @@
 from django.contrib import admin
-from. models import Category,Brand,Size,Color,Product,Coupon
+from. models import Category,Brand,Size,Color,Product,Coupon,Banner
 from core.models import Cart,CartItem
 from user.models import AddressUS,Wallet
 from core.models import ProductOrder,Order,Payment
@@ -20,6 +20,7 @@ admin.site.register(AddressUS)
 admin.site.register(Coupon)
 admin.site.register(Payment)
 admin.site.register(Wallet)
+admin.site.register(Banner)
 
 
 

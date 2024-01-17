@@ -19,6 +19,8 @@ from django.http import JsonResponse
 from django.db.models import Count
 from django.db.models.functions import ExtractMonth, ExtractYear,Coalesce
 from PIL import Image 
+from.models import Banner
+from datetime import datetime, timedelta
 
 from django.http import HttpResponse
 from django.contrib import messages
@@ -729,3 +731,86 @@ def get_order_dates(request):
         return JsonResponse(data, safe=False)
     else:
         return JsonResponse({}, status=403)
+
+
+
+
+def admin_banner(request):
+    if not request.user.is_superuser:
+        return redirect("admin_login")
+
+    banners = Banner.objects.all()
+    for banner in banners:
+        # Calculate days difference
+        banner.days_difference = (timezone.now() - banner.created_at).days
+        print(f"Banner ID: {banner.id}, Created At: {banner.created_at}, Days Difference: {banner.days_difference}")
+
+        # Deactivate banner if more than 7 days
+        if banner.days_difference >= 7 and banner.active:
+            banner.active = False
+            banner.save()
+
+    if request.method == 'POST':
+        banner_image = request.FILES.get('image')
+        title = request.POST.get('title')
+        subtitle = request.POST.get('sub_title')
+
+        if not all([banner_image, title, subtitle]):
+            messages.error(request, "Please provide all the required fields")
+        else:
+            banner = Banner(banner_img=banner_image, title=title, subtitle=subtitle)
+            banner.save()
+
+            # Calculate days difference for the newly created banner
+            banner.days_difference = (timezone.now() - banner.created_at).days
+            banner.save()
+
+            return redirect('admin_banner')
+
+    context = {"banners": banners}
+    return render(request, "admin/admin_banner.html", context)
+
+
+def edit_banner(request, banner_id):
+    banner = Banner.objects.get(id=banner_id)
+    
+    if request.method == "POST":  # Corrected to lowercase "post"
+        banner_img = request.FILES.get('image')
+        title = request.POST.get('title')
+        subtitle = request.POST.get('sub_title')  # Corrected to match HTML form field name
+
+        if not all([banner_img, title, subtitle]):
+            messages.error(request, "Please provide all the required fields.")
+        else:
+            banner.banner_img = banner_img
+            banner.title = title
+            banner.subtitle = subtitle
+            banner.save()
+
+            messages.success(request, "Banner updated successfully")
+            return redirect("admin_banner")
+
+    context = {
+        "banner": banner,
+    }
+        
+    return render(request, 'admin/edit_banner.html', context) 
+
+
+@require_POST
+def banner_active(request,banner_id):
+    banner=get_object_or_404(Banner,id=banner_id)
+    banner.active = True
+    banner.save()
+    messages.success(request,'activated successfully.')
+    return redirect('admin_banner')
+
+@require_POST
+def banner_blocked(request,banner_id):
+    banner=get_object_or_404(Banner,id=banner_id)
+    banner.active=False
+    banner.save()
+    messages.success(request,'blocked successfully.')
+    return redirect(admin_banner)
+
+

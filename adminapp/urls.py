@@ -31,6 +31,10 @@ urlpatterns = [
     path('block_coupon/<int:coupon_id>/',views.block_coupon, name='block_coupon'),
     path('unblock_coupon/<int:coupon_id>/', views.unblock_coupon, name='unblock_coupon'),
     path('sales_statistics/',views.sales_statistics,name='sales_statistics'),
+    path('admin_banner/', views.admin_banner, name='admin_banner'),
+    path('edit_banner/<int:banner_id>/',views.edit_banner, name="edit_banner"),
+    path('banner_active/<int:banner_id>/',views.banner_active,name='banner_active'),
+    path('banner_block/int:banner_id>/',views.banner_block,name='banner_block')
     
 ]
 

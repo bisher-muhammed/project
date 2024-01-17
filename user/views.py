@@ -9,6 +9,7 @@ from django.contrib.auth.models import User
 from django.views.decorators.cache import cache_control, never_cache
 import re
 from adminapp import views
+from adminapp .models import Banner
 from django.contrib import messages
 from django.db.models import Q
 from adminapp.models import Product, Color,Size
@@ -16,6 +17,7 @@ from.models import UserProfile,AddressUS, Wallet
 from core.models import ProductOrder,Order
 from django.db.models import Sum
 from adminapp.models import Category
+from django.utils import timezone
 
 import random
 from django.core.validators import validate_email
@@ -36,12 +38,25 @@ from django.contrib.auth import update_session_auth_hash
 def home(request):
     if request.user.is_anonymous:
         return redirect('login_view')
+
     products = Product.objects.filter(is_active=True)
     category_list = Category.objects.all()
+    banners = Banner.objects.all()
+
+    # Calculate days difference for each banner
+    for banner in banners:
+        banner.days_difference = (timezone.now() - banner.created_at).days
+        print(f"Banner ID: {banner.id}, Created At: {banner.created_at}, Days Difference: {banner.days_difference}")
+
+    if not request.user.is_active:
+        request.session.flush()
+
     context = {
         'products': products,
-        'category':category_list
+        'category': category_list,
+        'banners': banners,
     }
+
     return render(request, 'accounts/home.html', {'username': request.user.username, **context})
 
 @never_cache
@@ -496,6 +511,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+# views.py
+from django.shortcuts import render
+from django.db.models import Sum, DecimalField
+from django.http import HttpResponseServerError
+from decimal import Decimal
+
 
 def wallet(request):
     # Fetch the list of orders for the user
@@ -520,8 +541,8 @@ def wallet(request):
         user_wallet.save()
 
         # Remove 'updated_wallet_balance' from the session
-        del request.session['updated_wallet_balance']
-        request.session.save()
+        # del request.session['updated_wallet_balance']
+        # request.session.save()
         
         
 

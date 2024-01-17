@@ -3,6 +3,7 @@ from django.core.validators import MinValueValidator
 from django.contrib.auth.models import User
 from django.db.models import F, Sum
 from image_cropping import ImageRatioField, ImageCropField
+from django.utils import timezone
 
 
 class  Category(models.Model):
@@ -76,4 +77,21 @@ class Coupon(models.Model):
         return self.coupon_code
     
 # total_revenue = Product.objects.aggregate(total_revenue=Sum(F('offer_price') * F('cartitem.quantity')))['total_revenue']    
+
+
+class Banner(models.Model):
+    banner_img=models.ImageField(upload_to='media/banner/image',null=True,blank=True)
+    subtitle=models.CharField(max_length=50,blank=True,null=True)
+    title = models.CharField(max_length=50, blank=True, null=True) 
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    days_difference = models.IntegerField(null=True, blank=True) 
+
+    def __str__(self):
+        return self.title
     
+
+    def save(self, *args, **kwargs):
+            self.days_difference = (timezone.now() - self.created_at).days
+            print(f"Banner ID: {self.id}, Days Difference: {self.days_difference}")
+            super().save(*args, **kwargs)    
