@@ -9,7 +9,8 @@
             <p>Whole data about your business here</p>
         </div>
         <div>
-            <a href="#" class="btn btn-primary"><i class="text-muted material-icons md-post_add"></i>Create report</a>
+            <a href="{% url 'salesreport' %}" class="btn btn-primary"><i class="text-muted material-icons md-post_add"></i> Sales Report</a>
+
         </div>
     </div>
     <div class="row">
@@ -287,12 +288,33 @@
             </div>
         </div>
         <div class="col-xl-4 col-lg-12">
-            <div class="card mb-4">
-                <article class="card-body">
-                    <h5 class="card-title">Revenue Base on Area</h5>
-                    <canvas id="myChart2" height="217"></canvas>
-                </article>
-            </div>
+        <div class="card mb-4">
+            <article class="card-body">
+                <h5 class="card-title">Revenue Based on category</h5>
+                <!-- Create a canvas element with an id for the chart -->
+                <canvas id="myChart2" height="217"></canvas>
+            </article>
+        </div>
+    </div>
+
+    <!-- Add JavaScript to populate the chart data and render it -->
+    <script>
+        // Assuming you have data available in the template context
+        var orderChartData = {
+            labels: {{ category_labels|safe }},  // Replace with your category labels
+            datasets: [{
+                data: {{ order_counts|safe }},  // Replace with your actual order counts
+                backgroundColor: ["#FF6384", "#36A2EB", "#FFCE56"]  // Replace with your desired colors
+            }]
+        };
+    
+        // Get the canvas element and create a chart
+        var ctx = document.getElementById('myChart2').getContext('2d');
+        var orderChart = new Chart(ctx, {
+            type: 'pie',
+            data: orderChartData,
+        });
+    </script>
             <div class="card mb-4">
                 <article class="card-body">
                     <h5 class="card-title">Marketing Chanel</h5>

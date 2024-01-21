@@ -28,9 +28,13 @@ urlpatterns = [
     path('wallet/', views.wallet, name='wallet'),
     path('forgot_password/', views.forgot_password, name='forgot_password'),
     path('email_valid/', views.email_valid,name='email_valid'),
+    path('shop/',views.shop_lists,name='shop_lists'),
     # path('reset_password/',views.reset_password,name='reset_password')
 
-      # path('reason_view/<int:order_id>/', views.reason_view, name='reason_view'),
+    # path('reason_view/<int:order_id>/', views.reason_view, name='reason_view'),
+    path('filter/<str:category_name>/',views. filter_products_by_category, name='filter_products_by_category'),
+    path('filter_brand/<str:brand_name>/',views. filter_products_by_brand, name='filter_products_by_brand'),
+    
 
 
 

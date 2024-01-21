@@ -110,7 +110,7 @@ class Payment(models.Model):
     discount = models.FloatField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def _str_(self):
+    def __str__(self):
         return self.payment_method 
     
     

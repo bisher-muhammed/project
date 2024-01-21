@@ -83,12 +83,18 @@
                                 <p class="card-text">Sub Title: {{ banner.subtitle }}</p>
                             </div>
                             <td>
-                                {% if bann.active %}
-                                    <a class="btn btn-danger btn-sm btn-rounded" href="{% url 'unblock_coupon' coupon.id %}">Unlist</a>
-                                {% else %}
-                                    <a class="btn btn-success btn-sm btn-rounded"  href="{% url 'block_coupon' coupon.id %}" style="background-color: #83B08A;">List</a>
-                                {% endif %}
-                            </td>
+                {% if banner.is_active %}
+                    <form method="post" action="{% url 'banner_blocked' banner_id=banner.id %}">
+                        {% csrf_token %}
+                        <button class="btn btn-danger btn-sm btn-rounded" type="submit">Unlist</button>
+                    </form>
+                {% else %}
+                    <form method="post" action="{% url 'banner_active' banner_id=banner.id %}">
+                        {% csrf_token %}
+                        <button class="btn btn-success btn-sm btn-rounded" type="submit" style="background-color: #83B08A;">List</button>
+                    </form>
+                {% endif %}
+            </td>
                         </div>
                     </div>
                 {% endfor %}

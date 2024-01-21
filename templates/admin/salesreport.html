@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Report</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 5px;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+        }
+
+        .pagination a {
+            color: black;
+            float: left;
+            padding: 8px 16px;
+            text-decoration: none;
+            transition: background-color .3s;
+            border: 1px solid #ddd;
+            margin: 0 4px;
+        }
+
+        .pagination a.active {
+            background-color: #4CAF50;
+            color: white;
+            border: 1px solid #4CAF50;
+        }
+
+        .pagination a:hover:not(.active) {
+            background-color: #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sales Report</h1>
+        <form method="get" action="{% url 'salesreport' %}">
+            <label for="start_date">Start Date:</label>
+            <input type="date" id="start_date" name="start_date">
+        
+            <label for="end_date">End Date:</label>
+            <input type="date" id="end_date" name="end_date">
+        
+            <button type="submit">Filter</button>
+            
+        </form>
+        <h2>Total_Revenwe:{{total_order_amount}}</h2>
+
+        
+        <table class="table">
+            <thead class="thead-light">
+                <tr>
+                    <th>Order Number</th>
+                    <th>User</th>
+                    <th>Address</th>
+                    <th>Total Amount</th>
+                    <th>Status</th>
+                    <th>Payment Method</th>
+                    <th>Products</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                    <tr>
+                        <td>{{ order.order_number }}</td>
+                        <td>{{ order.user.username }}</td>
+                        <td>{{ order.address }}</td>
+                        <td>${{ order.order_total }}</td>
+                        <td>{{ order.status }}</td>
+                        <td>{{ order.payment_method }}</td>
+                        <td>
+                            <ul>
+                                {% for product_order in order.productorder_set.all %}
+                                    <li>{{ product_order.quantity }} x {{ product_order.product.product_name }}</li>
+                                {% endfor %}
+                            </ul>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="pagination">
+            <span class="step-links">
+                {% if orders.has_previous %}
+                    <a href="?page=1">&laquo; first</a>
+                    <a href="?page={{ orders.previous_page_number }}">previous</a>
+                {% endif %}
+
+                <span class="current">
+                    Page {{ orders.number }} of {{ orders.paginator.num_pages }}.
+                </span>
+
+                {% if orders.has_next %}
+                    <a href="?page={{ orders.next_page_number }}">next</a>
+                    <a href="?page={{ orders.paginator.num_pages }}">last &raquo;</a>
+                {% endif %}
+            </span>
+            <button id="printButton">Download</button>
+
+            <script>
+                // Add an event listener to the button
+                document.getElementById('printButton').addEventListener('click', function() {
+                    // Trigger the print function when the button is clicked
+                    window.print();
+                });
+            </script>
+        </div>
+    </div>
+</body>
+</html>

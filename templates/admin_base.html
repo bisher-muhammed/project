@@ -32,6 +32,8 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@{{ version }}/dist/css/bootstrap-datepicker.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flaticon@{{ version }}/font/flaticon.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/style.css@{{ version }}">
+<a href="?format=pdf&start_date=2022-01-01&end_date=2022-12-31">Download PDF</a>
+
 
     </head>
     
@@ -55,13 +57,20 @@
                             <span class="text">Dashboard</span>
                         </a>
                     </li>
-                    <li class="menu-item ">
-                        <a class="menu-link" href="{% url 'product_list' %}">
+                    <li class="menu-item has-submenu">
+                        <a class="menu-link" href="#">
                             <i class="icon material-icons md-shopping_bag"></i>
                             <span class="text">Products</span>
                         </a>
+                        <ul class="submenu">
+                            <li class="submenu-item">
+                                <a href="{% url 'product_list' %}">Product List</a>
+                            </li>
+                            <li class="submenu-item">
+                                <a href="{% url 'offer_product' %}">Product Offers</a>
+                            </li>
+                        </ul>
                     </li>
-                    
                     <li class="menu-item has-menu">
                         <a class="menu-link" href="{% url 'admin_order' %}">
                             <i class="icon material-icons md-shopping_cart"></i>
@@ -114,6 +123,17 @@
                             <span class="text">Category</span>
                         </a>
                     </li>
+                    <ul class="menu-aside">
+                        <li class="menu-item has-submenu">
+                            <a class="menu-link"href="{% url 'admin_category' %}">
+                                <i class="icon material-icons md-settings"></i>
+                                <span class="text">Category</span>
+                            </a>
+                            <div class="submenu">
+                                <a href="{% url 'category_offer' %}">category_offer</a>
+                                
+                            </div>
+                        </li>
                     <li class="menu-item has-submenu">
                         <a class="menu-link" href="#">
                             <i class="icon material-icons md-person"></i>

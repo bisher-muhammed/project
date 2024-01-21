@@ -593,6 +593,14 @@
                                         <a href="page-contact.html">Contact</a>
                                     </li>
                                 </ul>
+                                <form method="get" action="{% url 'home' %}">
+                                    <input type="text" name="search" placeholder="Search products" value="{{ search_query }}">
+                                    <button type="submit">Search</button>
+                                </form>
+                                
+                                {% if search_query %}
+                                    <p>Search results for "{{ search_query }}":</p>
+                                {% endif %}
                             </nav>
                         </div>
                     </div>

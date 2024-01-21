@@ -83,7 +83,7 @@ class Banner(models.Model):
     banner_img=models.ImageField(upload_to='media/banner/image',null=True,blank=True)
     subtitle=models.CharField(max_length=50,blank=True,null=True)
     title = models.CharField(max_length=50, blank=True, null=True) 
-    active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     days_difference = models.IntegerField(null=True, blank=True) 
 
@@ -95,3 +95,16 @@ class Banner(models.Model):
             self.days_difference = (timezone.now() - self.created_at).days
             print(f"Banner ID: {self.id}, Days Difference: {self.days_difference}")
             super().save(*args, **kwargs)    
+
+
+class Offer(models.Model):
+    category = models.OneToOneField(Category, on_delete=models.CASCADE)
+    percentage = models.DecimalField(max_digits=5, decimal_places=2)
+    expiry_date = models.DateField()
+    
+    
+
+    
+
+    def __str__(self):
+        return f"Offer for {self.category.category_name}" 

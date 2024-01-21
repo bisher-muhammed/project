@@ -1,0 +1,96 @@
+{% extends "user_base.html" %}
+{% load static %}
+
+{% block content %}
+    <div class="colorlib-product">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-3 col-xl-3">
+                    <div class="row">
+                        <!-- Sidebar content... -->
+                        <div class="col-sm-12">
+                            <div class="side border mb-4">
+                                <h3>Brand</h3>
+                                <ul>
+                                    {% for brand in brands %}
+                                        <li><a href="{% url 'filter_products_by_brand' brand.brand_name %}">{{ brand.brand_name }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-12">
+                            <div class="side border mb-4">
+                                <h3>Categories</h3>
+                                <ul>
+                                    {% for category in categories %}
+                                        <li><a href="{% url 'filter_products_by_category' category.category_name %}">{{ category.category_name }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-12">
+                            <div class="side border mb-4">
+                                <form method="get" action="">
+                                    <label for="min_price">Min Price:</label>
+                                    <input type="text" id="min_price" name="min_price" value="{{ request.GET.min_price }}">
+
+                                    <label for="max_price">Max Price:</label>
+                                    <input type="text" id="max_price" name="max_price" value="{{ request.GET.max_price }}">
+
+                                    <button type="submit">Filter</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-9 col-xl-9">
+                    <div class="row row-pb-md">
+                        {% for product in products %}
+                            <div class="col-lg-4 mb-4 text-center">
+                                <div class="product-entry border">
+                                    <a href="#" class="prod-img">
+                                        <img src="{{ product.product_img1.url }}" class="img-fluid" alt="Free html5 bootstrap 4 template">
+                                    </a>
+                                    <div class="desc">
+                                        <h2><a href="{% url 'product_detials' product.id %}">{{ product.product_name }}</a></h2>
+                                        <span class="price">{{ product.offer_price }}</span>
+                                        <p><a href="{% url 'product_detials' product.id %}" class="btn btn-primary btn-lg">Shop now</a></p>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-12 text-center">
+                        <div class="block-27">
+                            <ul>
+                                {% for page_num in products.paginator.page_range %}
+                                    <li>{% if products.number == page_num %} class="active"{% endif %}><a href="?page={{ page_num }}">{{ page_num }}</a></li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="colorlib-partner">
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-8 offset-sm-2 text-center colorlib-heading colorlib-heading-sm">
+                    <h2>Trusted Partners</h2>
+                </div>
+            </div>
+            <div class="row">
+                {% for brand in brands %}
+                    <div class="col partner-col text-center">
+                        <img src="{{ brand.brand_image.url }}" class="img-fluid" alt="Free html4 bootstrap 4 template">
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endblock content %}

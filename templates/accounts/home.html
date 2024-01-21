@@ -67,6 +67,7 @@
         </div>
         <div class="slider-arrow hero-slider-1-arrow"></div>
     </section>
+    
     <section class="featured section-padding position-relative">            
         <div class="container">
             <div class="row">
@@ -135,7 +136,7 @@
                                 
       
         
-                <div class="row product-grid-4">
+                    <div class="row product-grid-4">
                     {% for product in products %}
                         <div class="col-lg-3 col-md-4 col-12 col-sm-6">
                             <div class="product-cart-wrap mb-30">
@@ -161,12 +162,19 @@
                                     </div>
                                     <h2><a href="shop-product-right.html">{{ product.product_name }}</a></h2>
                                     <div class="rating-result" title="90%">
-                                        <span>
-                                            <span>90%</span>
-                                        </span>
+                                        {% for offer in applied_offer %}
+                                            {% if offer.category == product.category %}
+                                                <span>{{ offer.percentage }}% Off</span>
+                                            {% endif %}
+                                        {% endfor %}
                                     </div>
+                        
                                     <div class="product-price">
-                                        <span>₹{{ product.offer_price }} </span>
+                                        {% if applied_offer %}
+                                        <p>Discounted Price: ₹{{  product.offer_price }}</p>
+                                    {% else %}
+                                        <p>Offer Price: ₹{{ product.offer_price }}</p>
+                                    {% endif %}
                                         <span class="old-price">₹{{ product.original_price }}</span>
                                     </div>
                                     <div class="product-action-1 show">
@@ -178,6 +186,8 @@
                     {% endfor %} 
                 </div>
             </div>
+
+
                 <!--En tab one (Featured)-->
                 <div class="tab-pane fade" id="tab-two" role="tabpanel" aria-labelledby="tab-two">
                     <div class="row product-grid-4">
@@ -805,7 +815,7 @@
                     <div class="banner-text d-md-block d-none">
                         <h4 class="mb-15 mt-40 text-brand">{{ banner.subtitle }}</h4>
                         <h1 class="fw-600 mb-20">{{ banner.title }}</h1>
-                        <a href="{% url 'product_list' %}" class="btn btn-outline-white">
+                        <a href="{% url 'shop_lists' %}" class="btn btn-outline-white">
                             <span>SHOP NOW</span>
                             <i class="icon-long-arrow-right"></i>
                         </a>
@@ -1889,7 +1899,7 @@
                                         <span class="countdown-label">Seconds</span>
                                     </div>
                                 </div>
-                                <a href="{% url 'product_list' %}" class="btn btn-outline-white">
+                                <a href="{% url 'shop_lists' %}" class="btn btn-outline-white">
                                     <span>SHOP NOW</span>
                                     <i class="icon-long-arrow-right"></i>
                                 </a>

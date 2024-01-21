@@ -18,6 +18,7 @@ from core.models import ProductOrder,Order
 from django.db.models import Sum
 from adminapp.models import Category
 from django.utils import timezone
+from adminapp.models import *
 
 import random
 from django.core.validators import validate_email
@@ -27,7 +28,7 @@ from django.contrib.auth.hashers import make_password
 from django.db import transaction
 
 from django.contrib.auth import update_session_auth_hash
-
+from django.db.models import Q
 
 
 
@@ -41,23 +42,45 @@ def home(request):
 
     products = Product.objects.filter(is_active=True)
     category_list = Category.objects.all()
-    banners = Banner.objects.all()
+    all_offers=Offer.objects.all()
+    applied_offer=Offer.objects.all()
+    banners = Banner.objects.filter(is_active=True)
+    search_query=request.GET.get('search','')
+    if search_query:
+
+        products = products.filter(
+            Q(product_name__icontains=search_query) |
+            Q(product_description__icontains=search_query)
+        )
 
     # Calculate days difference for each banner
     for banner in banners:
         banner.days_difference = (timezone.now() - banner.created_at).days
         print(f"Banner ID: {banner.id}, Created At: {banner.created_at}, Days Difference: {banner.days_difference}")
+    
+        
 
     if not request.user.is_active:
         request.session.flush()
+        print(applied_offer)
+
+    
 
     context = {
         'products': products,
         'category': category_list,
         'banners': banners,
+        'search_query': search_query,
+        'all_offers': all_offers,
+        'applied_offer': applied_offer,
     }
+    print("Applied Offer:", applied_offer)
+    for product in products:
+        print(f"Product: {product.product_name}, Offer: {applied_offer}")
 
     return render(request, 'accounts/home.html', {'username': request.user.username, **context})
+
+    
 
 @never_cache
 def login_view(request):
@@ -692,3 +715,91 @@ def forgot_password(request):
             messages.error(request, f'Error updating password: {e}')
 
     return render(request, 'accounts/forgot_password.html')
+
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+def shop_lists(request):
+    products = Product.objects.filter(is_active=True)
+    brands = Brand.objects.filter(is_active=True)
+    categories = Category.objects.filter(is_blocked=True)
+
+    min_price = float(request.GET.get('min_price', 0))
+
+    max_price_param = request.GET.get('max_price')
+    if max_price_param is not None:
+        max_price = float(max_price_param)
+    else:
+        # Use a large number instead of infinity
+        max_price = 1e20
+
+    # Filter products based on the offer price range
+    filtered_products = Product.objects.filter(offer_price__gte=min_price, offer_price__lte=max_price)
+    # selected_brand =request.GET.get('brand')
+    # selected_category= request.GET.get('caategory')
+
+    # if selected_category:
+    #     products = products.filter(category__category_name=selected_category)
+    # if selected_brand:
+    #     products = products.filter(brand__brand_name=selected_brand)
+
+     # Pagination logic
+    page = request.GET.get('page', 1)
+    paginator = Paginator(products, 12)  # Show 12 products per page
+    try:
+        products = paginator.page(page)
+    except PageNotAnInteger:
+        products = paginator.page(1)
+    except EmptyPage:
+        products = paginator.page(paginator.num_pages)
+
+    
+
+
+
+    context = {
+        "products": filtered_products,
+        "brands": brands,
+        'categories': categories,
+        
+    }
+
+    return render(request, 'accounts/shop.html', context)
+
+
+def filter_products_by_category(request, category_name):
+    # Filter products based on the selected category
+    category_products = Product.objects.filter(category__category_name=category_name, is_active=True)
+
+    # Get the selected price range
+    min_price = float(request.GET.get('min_price', 0))
+    max_price_param = request.GET.get('max_price')
+
+    if max_price_param is not None:
+        max_price = float(max_price_param)
+    else:
+        # Use a large number instead of infinity
+        max_price = 1e20
+
+    # Filter products based on the offer price range
+    filtered_products = category_products.filter(offer_price__gte=min_price, offer_price__lte=max_price)
+
+    return render(request, 'accounts/shop.html', {'products': filtered_products})
+
+
+def filter_products_by_brand(request, brand_name):
+    # Filter products based on the selected brand
+    brand_products = Product.objects.filter(brand__brand_name=brand_name, is_active=True)
+
+    # Get the selected price range
+    min_price = float(request.GET.get('min_price', 0))
+    max_price_param = request.GET.get('max_price')
+
+    if max_price_param is not None:
+        max_price = float(max_price_param)
+    else:
+        # Use a large number instead of infinity
+        max_price = 1e20
+
+    # Filter products based on the offer price range
+    filtered_products = brand_products.filter(offer_price__gte=min_price, offer_price__lte=max_price)
+
+    return render(request, 'accounts/shop.html', {'products': filtered_products})

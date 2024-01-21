@@ -1,3 +1,4 @@
+from urllib import response
 from django.shortcuts import render, redirect,get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.views.decorators.cache import cache_control, never_cache
@@ -5,7 +6,7 @@ from django.views.decorators.http import require_POST, require_GET
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Sum,F, DecimalField
-from .models import Category, Brand, Size, Color, Product,Coupon
+from .models import Category, Brand, Size, Color, Product,Coupon,Offer
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import ValidationError
@@ -21,6 +22,7 @@ from django.db.models.functions import ExtractMonth, ExtractYear,Coalesce
 from PIL import Image 
 from.models import Banner
 from datetime import datetime, timedelta
+from core.models import *
 
 from django.http import HttpResponse
 from django.contrib import messages
@@ -50,6 +52,20 @@ def admin_login(request):
     return render(request, 'admin/admin_login.html')
 def admin_home(request):
     if request.user.is_authenticated:
+
+        category_order_counts = (
+        ProductOrder.objects
+        .filter(ordered=True)
+        .values('product__category__category_name')
+        .annotate(order_count=Count('id'))
+    )
+
+    # Prepare data for JavaScript
+        category_labels = [item['product__category__category_name'] for item in category_order_counts]
+        order_counts = [item['order_count'] for item in category_order_counts]
+
+        # Create a dictionary to store category-wise order counts
+        
         total_users = User.objects.count()
         total_products = Product.objects.count()
         total_orders = Order.objects.count()
@@ -101,6 +117,10 @@ def admin_home(request):
             'sales_stats': sales_stats,
             'monthly_orders': monthly_orders,
             'yearly_orders': yearly_orders,
+            'category_labels': category_labels,
+            'order_counts': order_counts,
+
+            
         }
 
         return render(request, 'admin/admin_home.html', context)
@@ -747,7 +767,7 @@ def admin_banner(request):
 
         # Deactivate banner if more than 7 days
         if banner.days_difference >= 7 and banner.active:
-            banner.active = False
+            banner.is_active = False
             banner.save()
 
     if request.method == 'POST':
@@ -797,20 +817,199 @@ def edit_banner(request, banner_id):
     return render(request, 'admin/edit_banner.html', context) 
 
 
-@require_POST
-def banner_active(request,banner_id):
-    banner=get_object_or_404(Banner,id=banner_id)
-    banner.active = True
-    banner.save()
-    messages.success(request,'activated successfully.')
+def banner_active(request, banner_id):
+    try:
+        banner = Banner.objects.get(id=banner_id)
+        banner.is_active = True
+        banner.save()
+        messages.success(request, 'Listed successfully.')
+    except Banner.DoesNotExist:
+        messages.error(request, 'Banner not found.')
     return redirect('admin_banner')
 
-@require_POST
-def banner_blocked(request,banner_id):
-    banner=get_object_or_404(Banner,id=banner_id)
-    banner.active=False
-    banner.save()
-    messages.success(request,'blocked successfully.')
-    return redirect(admin_banner)
+
+def banner_blocked(request, banner_id):
+    try:
+        banner = Banner.objects.get(id=banner_id)
+        banner.is_active = False
+        banner.save()
+        messages.success(request, 'Unlisted successfully.')
+    except Banner.DoesNotExist:
+        messages.error(request, 'Banner not found.')
+    return redirect('admin_banner')
 
 
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from datetime import datetime
+
+def salesreport(request):
+    # Fetch start and end date from the query parameters
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+
+    # Parse the date strings into datetime objects
+    start_date = datetime.strptime(start_date_str, "%Y-%m-%d") if start_date_str else None
+    end_date = datetime.strptime(end_date_str, "%Y-%m-%d") if end_date_str else None
+
+    # Fetch orders with related data
+    orders = Order.objects.select_related('user', 'address', 'coupon', 'cart__user') \
+                         .prefetch_related('productorder_set__product', 'productorder_set__cart_item__product')
+
+    # Apply date filtering if start and end dates are provided
+    if start_date and end_date:
+        orders = orders.filter(created_at__range=[start_date, end_date])
+
+    # Fetch payment details for each order
+    for order in orders:
+        payment_data = Payment.objects.filter(user=order.user, created_at__gte=order.created_at).first()
+        order.payment_method = payment_data.payment_method if payment_data else 'N/A'
+
+        total_order_amount = orders.aggregate(total_order_amount=Sum('order_total'))['total_order_amount']
+
+    # Pagination
+    page = request.GET.get('page', 1)
+    paginator = Paginator(orders, 10)
+    try:
+        orders = paginator.page(page)
+    except PageNotAnInteger:
+        orders = paginator.page(1)
+    except EmptyPage:
+        orders = paginator.page(paginator.num_pages)
+    return render(request, 'admin/salesreport.html', {'orders': orders,'total_order_amount': total_order_amount})
+
+from django.db import IntegrityError
+from django.http import HttpResponseBadRequest
+
+
+def category_offer(request):
+    print("Inside category_offer view")
+    print(request.POST)
+    products=Product.objects.filter(is_active=True)
+
+    categories = Category.objects.filter(is_blocked=True)
+    selected_category = None
+    applied_offer = None
+    all_offers = Offer.objects.all()  # Fetch all offers
+
+    if request.method == 'POST':
+        category_id = request.POST.get('selectCategory')
+        print("Selected Category ID:", category_id)
+        selected_category = get_object_or_404(Category, pk=category_id) if category_id else None
+        print("Selected Category:", selected_category)
+
+        if selected_category:
+            offer_percentage = request.POST.get('offer_percentage')
+            expiry_date = request.POST.get('expiry_date')
+
+            print(f"Offer Percentage: {offer_percentage}")
+            print(f"Expiry Date: {expiry_date}")
+
+            expiry_date = datetime.strptime(expiry_date, '%Y-%m-%d').date()
+
+            if expiry_date <= timezone.now().date():
+                messages.error(request, 'Please provide a valid future expiration date')
+                return redirect('category_offer')  # Redirect to the same page if there's an error
+
+            try:
+                # Get the existing offer or create a new one for the selected category
+                offer = Offer.objects.get(category=selected_category)
+            except Offer.DoesNotExist:
+                offer = Offer(category=selected_category)
+
+            offer.percentage = float(offer_percentage) if offer_percentage else 0.0
+            offer.expiry_date = expiry_date
+
+            try:
+                offer.save()
+            except IntegrityError as e:
+                print(f"Error saving offer: {e}")
+
+            print(f"Offer Saved: {offer}")
+            discounted_price = 0.0
+
+            # Update product prices in the selected category
+            products_in_category = Product.objects.filter(category=selected_category, is_active=True)
+            print("Number of products:", products_in_category.count())
+            print("Before the loop")
+            print("Selected Category ID:", selected_category.id)
+            print("Selected Category Name:", selected_category.category_name)
+
+            for product in products_in_category:
+                discounted_price = product.original_price - (product.original_price * (offer.percentage / 100))
+                print(f"Product: {product.product_name}, Original Price: {product.original_price}, Discounted Price: {discounted_price}")
+                product.offer_price = discounted_price
+                print("Products in Category Queryset:", products_in_category)
+                product.save()
+                print(f"Product: {product. product_name }, Original Price: {product.original_price}, Discounted Price: {discounted_price}")
+
+            applied_offer = offer
+            print('discounted_price:', discounted_price)
+            print('offer_price')
+
+            if applied_offer and applied_offer.expiry_date and applied_offer.expiry_date<timezone.now().date():
+                print(f"the offer for {applied_offer.category.category_name} has expired.")
+                for product in products_in_category:
+                    products.offer_price=None
+                    product.save()
+
+
+
+    context = {
+        'categories': categories,
+        'selected_category': selected_category,
+        'applied_offer': applied_offer,
+        'all_offers': all_offers,  # Pass all offers to the template
+    }
+
+    return render(request, 'admin/category_offer.html', context)
+
+
+
+
+
+def offer_product(request):
+    if request.method == 'POST':
+        product_id = request.POST.get('product')
+        offer_percentage = request.POST.get('offer_percentage')
+        expiry_date = request.POST.get('expiry_date')
+
+        try:
+            product = Product.objects.get(pk=product_id, is_active=True)
+        except Product.DoesNotExist:
+            messages.error(request, 'Invalid product selected')
+            return redirect('offer_product')
+        
+        expiry_date = datetime.strptime(expiry_date, '%Y-%m-%d').date()
+        
+
+        if expiry_date <= timezone.now().date():
+            messages.error(request, 'Please provide a valid expiry date')
+        else:
+            try:
+                offer, created = Offer.objects.get_or_create(product=product)
+            except IntegrityError as e:
+                messages.error(request, f"Error creating or updating offer: {e}")
+
+            offer.percentage = float(offer_percentage) if offer_percentage else 0.0
+            offer.expiry_date = expiry_date
+
+            try:
+                offer.save()
+            except IntegrityError as e:
+                messages.error(request, f"Error saving offer: {e}")
+
+            discounted_price = product.original_price - (product.original_price * (offer.percentage / 100))
+            product.offer_price = discounted_price
+            product.save()
+
+            messages.success(request, 'Offer applied successfully')
+
+            return redirect('offer_product')
+
+    products = Product.objects.filter(is_active=True)
+    return render(request, 'admin/offer_product.html', {'products': products})
+
+    
+
+
+        
