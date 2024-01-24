@@ -82,55 +82,270 @@ def home(request):
 
     
 
+# @never_cache
+# def login_view(request):
+#     if 'username' in request.session:
+#         return redirect('home')
+#     if request.method=='POST':
+#         username=request.POST.get('username')
+#         password=request.POST.get('password')
+#         if not username or not password:
+#             error = "Both username and password are required."
+#             return render(request, 'accounts/login_view.html', {'error': error})
+
+#         user=authenticate(username=username,password=password)
+#         if user is not None:
+#             request.session['username']=username
+#             login(request,user)
+#             return redirect("home")
+#         else:
+#             error = "Invalid credentials"
+#             return render(request, 'accounts/login_view.html', {'error': error})
+
+#     return render(request,'accounts/login_view.html')# Assuming you have a URL named 'login'
+
+# @cache_control(must_revalidate=True, no_transform=True, no_cache=True, no_store=True)
+# def signup_view(request):
+#     if request.method=='POST':
+#         username=request.POST.get('username')
+#         email=request.POST.get('email')
+#         password=request.POST.get('pass1')
+#         confrim_password=request.POST.get('pass2')
+
+#         request.session['uname'] = username
+#         request.session['email'] = email
+#         request.session['password'] = password
+
+
+
+#         try:
+#             if not username or  not email or not password:
+#                 messages.error(request, 'Enter details to field')
+#                 return redirect('signup_view')
+#         except:
+#             pass
+
+#         try:
+#             if User.objects.filter(username=username).exists():
+#                 messages.error(request, "Username already exists. Please choose a different one.")
+#                 return redirect("signup_view")
+#             elif not username.isalnum():
+#                 messages.warning(request, "Username contains invalid characters. Please use only letters and numbers.")
+#                 return redirect("signup_view")
+#         except:
+#             pass
+
+#         try:
+#             if User.objects.filter(email=email):
+#                 messages.error(request, "Email already exists")
+#                 return redirect("signup_view")
+#         except:
+#             pass
+
+#         try:
+#             validate_email(email)
+#         except ValidationError:
+#             messages.error(request, "Invalid email address")
+#             return redirect('signup_view')
+
+#         try:
+#             if password !=confrim_password:
+#                 messages.error(request, "passwords not matching")
+#                 return redirect("signup_view")
+#         except:
+#             pass
+
+#         try:
+#             if len(username)>20:
+#                 messages.error(request, "username is too long")
+#                 return redirect("signup_view")
+#         except:
+#             pass
+
+#         try:
+#             if len(password)<8:
+#                 messages.error(request, "Password must be at least 8 characters")
+#                 return redirect("signup_view")
+#         except:
+#             pass
+
+#         request.session['verification_type'] = 'signup_view'
+#         send_otp(request)
+#         return render(request, 'accounts/otp_verification.html')
+
+#     return render(request, 'accounts/signup_view.html')
+# import time
+# from datetime import datetime
+
+# def send_otp(request):
+#     s=""
+#     for x in range(0,4):
+#         s+=str(random.randint(0,9))
+#     print(s)
+#     request.session["otp"] = s
+#     request.session["otp_creation_time"] = time.time()
+    
+    
+#     email = request.session.get('email')
+#     send_mail("otp for sign up", s, 'bisherp2@gmail.com', [request.session['email']], fail_silently=False)
+#     return render(request, 'accounts/otp_verification.html')
+   
+
+# from django.shortcuts import render, redirect
+# from django.contrib.auth import authenticate, login
+# from django.contrib import messages
+# from django.contrib.auth.models import User
+
+# # ... (other imports)
+
+# from django.shortcuts import render, redirect
+# from django.contrib.auth import authenticate, login
+# from django.contrib import messages
+# from django.contrib.auth.models import User
+# import random
+# import time
+# from django.core.mail import send_mail
+# from django.urls import reverse
+
+# def otp_verification(request):
+#     print("Inside otp_verification view")
+#     print(f"Session data before redirection: {request.session}")
+
+#     email = request.session.get('email', '')  # Define email here with a default value
+
+#     if request.method == 'POST':
+#         otp_entered = request.POST.get('otp')
+#         otp_sent = request.session.get('otp')
+
+#         # Get OTP creation time from session
+#         otp_creation_time = request.session.get('otp_creation_time', 0)
+
+#         # Check if OTP is expired (more than 60 seconds old)
+#         if time.time() - otp_creation_time > 60:
+#             messages.error(request, "OTP has expired. Please request a new one.")
+#             return render(request, 'accounts/otp_verification.html', {"email": email})
+
+#         user_id = request.session.get('user_id')
+#         verification_type = request.session.get('verification_type')
+
+#         print(f"Verification type: {verification_type}")
+
+#         if otp_entered == otp_sent:
+#             username = request.session.get('uname')
+#             email = request.session.get('email')
+#             password = request.session.get('password')
+
+#             if verification_type == 'signup_view':
+#                 user = User.objects.create_user(username=username, email=email, password=password)
+#                 user.save()
+#                 return redirect('login_view')  # Redirect to login page for signup_view
+
+#             elif verification_type == 'login_view':
+#                 user = authenticate(request, username=email, password=password)
+#                 if user is not None:
+#                     username = user.username
+#                     request.session['username'] = username
+#                     login(request, user)
+#                     return redirect('home')
+#                 else:
+#                     messages.error(request, 'Invalid credentials')
+#                     return redirect('login_view')
+
+#         elif verification_type == 'forgot_password':
+#                 new_password = request.POST.get('new_password')  # Retrieve the new password from the form
+
+#                 try:
+#                     user = User.objects.get(id=user_id, email=email)
+#                     user.set_password(new_password)
+#                     user.save()
+#                     messages.success(request, 'Password updated successfully!')
+                    
+#                     return redirect('forgot_password')  # Redirect to login page for forgot_password
+
+#                 except User.DoesNotExist:
+#                     messages.error(request, 'User does not exist.')
+#                     return redirect('login_view')  # Redirect to login page for forgot_password
+
+#                 except Exception as e:
+#                     messages.error(request, f'Error updating password: {e}')
+
+#         else:
+#             messages.error(request, "Invalid OTP. Please try again.")
+#             return render(request, 'accounts/otp_verification.html', {"email": email})
+
+#     # Handle GET requests by rendering the OTP verification form
+#     return render(request, 'accounts/otp_verification.html', {"email": request.session.get('email')})
+
+
+
+# def resend_otp(request):
+#     new_otp = "".join([str(random.randint(0, 9)) for _ in range(4)])
+#     print("New OTP:", new_otp)
+#     email = request.session.get('email')
+#     send_mail("New OTP for Sign Up", new_otp, 'bisherp2@gmail.com', [email], fail_silently=False)
+#     request.session['otp'] = new_otp
+#     print("Resending OTP...")
+
+# # ... (other views)
+
+
 @never_cache
 def login_view(request):
-    if 'username' in request.session:
-        return redirect('home')
-    if request.method=='POST':
-        username=request.POST.get('username')
-        password=request.POST.get('password')
-        if not username or not password:
-            error = "Both username and password are required."
-            return render(request, 'accounts/login_view.html', {'error': error})
+    if "username" in request.session:
+        return redirect("home")
 
-        user=authenticate(username=username,password=password)
-        if user is not None:
-            request.session['username']=username
-            login(request,user)
-            return redirect("home")
+    if request.method == "POST":
+        email = request.POST.get("email")
+        password = request.POST.get("password")
+        request.session["email"] = email
+        request.session["password"] = password
+
+        if not email and not password:
+            messages.warning(request, "Enter details to field")
+            return redirect("login_view")
+
+        user = authenticate(request, username=email, password=password)
+        print(user, email, password)
+
+        if user is not None and user.is_active:
+            request.session["verification_type"] = "login_view"
+            send_otp(request)
+            return redirect("otp_page")
         else:
-            error = "Invalid credentials"
-            return render(request, 'accounts/login_view.html', {'error': error})
+            messages.error(request, "Invalid username or password")
+            return redirect("login_view")
 
-    return render(request,'accounts/login_view.html')# Assuming you have a URL named 'login'
+    return render(request, "accounts/login_view.html")
 
-@cache_control(must_revalidate=True, no_transform=True, no_cache=True, no_store=True)
+
 def signup_view(request):
-    if request.method=='POST':
-        username=request.POST.get('username')
-        email=request.POST.get('email')
-        password=request.POST.get('pass1')
-        confrim_password=request.POST.get('pass2')
+    if request.method == "POST":
+        username = request.POST.get("username")
+        email = request.POST.get("email")
+        password = request.POST.get("password")
+        confrim_password = request.POST.get("confirm_password")
 
-        request.session['uname'] = username
-        request.session['email'] = email
-        request.session['password'] = password
-
-
-
+        request.session["uname"] = username
+        request.session["email"] = email
+        request.session["password"] = password
         try:
-            if not username or  not email or not password:
-                messages.error(request, 'Enter details to field')
-                return redirect('signup_view')
+            if not username or not email or not password:
+                messages.error(request, "Enter details to field")
+                return redirect("signup_view")
         except:
             pass
 
         try:
             if User.objects.filter(username=username).exists():
-                messages.error(request, "Username already exists. Please choose a different one.")
+                messages.error(
+                    request, "Username already exists. Please choose a different one."
+                )
                 return redirect("signup_view")
             elif not username.isalnum():
-                messages.warning(request, "Username contains invalid characters. Please use only letters and numbers.")
+                messages.warning(
+                    request,
+                    "Username contains invalid characters. Please use only letters and numbers.",
+                )
                 return redirect("signup_view")
         except:
             pass
@@ -146,147 +361,127 @@ def signup_view(request):
             validate_email(email)
         except ValidationError:
             messages.error(request, "Invalid email address")
-            return redirect('signup_view')
+            return redirect("signup_view")
 
         try:
-            if password !=confrim_password:
+            if password != confrim_password:
                 messages.error(request, "passwords not matching")
                 return redirect("signup_view")
         except:
             pass
 
         try:
-            if len(username)>20:
+            if len(username) > 20:
                 messages.error(request, "username is too long")
                 return redirect("signup_view")
         except:
             pass
 
         try:
-            if len(password)<8:
+            if len(password) < 8:
                 messages.error(request, "Password must be at least 8 characters")
                 return redirect("signup_view")
         except:
             pass
 
-        request.session['verification_type'] = 'signup_view'
+        request.session["verification_type"] = "signup_view"
         send_otp(request)
-        return render(request, 'accounts/otp_verification.html')
+        return render(request, "accounts/verify_otp.html", {"email": email})
 
-    return render(request, 'accounts/signup_view.html')
-import time
-from datetime import datetime
+    return render(request, "accounts/signup_view.html")
+
+
+def otp_page(request):
+    if "username" in request.session:
+        return redirect("home")
+    email = request.session["email"]
+    return render(request, "accounts/verify_otp.html", {"email": email})
+
 
 def send_otp(request):
-    s=""
-    for x in range(0,4):
-        s+=str(random.randint(0,9))
+    s = ""
+    for x in range(0, 4):
+        s += str(random.randint(0, 9))
     print(s)
     request.session["otp"] = s
-    request.session["otp_creation_time"] = time.time()
-    
-    
-    email = request.session.get('email')
-    send_mail("otp for sign up", s, 'bisherp2@gmail.com', [request.session['email']], fail_silently=False)
-    return render(request, 'accounts/otp_verification.html')
-   
+    email = request.session.get("email")
 
-from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login
-from django.contrib import messages
-from django.contrib.auth.models import User
+    send_mail(
+        "otp for sign up",
+        s,
+        "bisherp2@gmail.com",
+        [email],
+        fail_silently=False,
+    )
+    return render(request, "accounts/verify_otp.html", {"email": email})
 
-# ... (other imports)
 
-from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login
-from django.contrib import messages
-from django.contrib.auth.models import User
-import random
-import time
-from django.core.mail import send_mail
-from django.urls import reverse
-
-def otp_verification(request):
-    print("Inside otp_verification view")
-    print(f"Session data before redirection: {request.session}")
-
-    email = request.session.get('email', '')  # Define email here with a default value
-
-    if request.method == 'POST':
-        otp_entered = request.POST.get('otp')
-        otp_sent = request.session.get('otp')
-
-        # Get OTP creation time from session
-        otp_creation_time = request.session.get('otp_creation_time', 0)
-
-        # Check if OTP is expired (more than 60 seconds old)
-        if time.time() - otp_creation_time > 60:
-            messages.error(request, "OTP has expired. Please request a new one.")
-            return render(request, 'accounts/otp_verification.html', {"email": email})
-
-        user_id = request.session.get('user_id')
-        verification_type = request.session.get('verification_type')
-
-        print(f"Verification type: {verification_type}")
+def verify_otp(request):
+    if request.method == "POST":
+        otp_entered = request.POST.get("otp")
+        otp_sent = request.session.get("otp")
+        verification_type = request.session.get("verification_type")
 
         if otp_entered == otp_sent:
-            username = request.session.get('uname')
-            email = request.session.get('email')
-            password = request.session.get('password')
+            username = request.session.get("uname")
+            email = request.session.get("email")
+            password = request.session.get("password")
+            print()
+            print(email, password)
 
-            if verification_type == 'signup_view':
-                user = User.objects.create_user(username=username, email=email, password=password)
+            if verification_type == "signup_view":
+                user = User.objects.create_user(
+                    username=username, email=email, password=password
+                )
                 user.save()
-                return redirect('login_view')  # Redirect to login page for signup_view
 
-            elif verification_type == 'login_view':
+                return redirect('login_view')
+                # messages.success(request, "Registration successful. You can now log in.")
+
+            elif verification_type == "login_view":
                 user = authenticate(request, username=email, password=password)
+                print(user)
                 if user is not None:
                     username = user.username
-                    request.session['username'] = username
+                    request.session["username"] = username
                     login(request, user)
-                    return redirect('home')
+                    return redirect("home")
                 else:
-                    messages.error(request, 'Invalid credentials')
-                    return redirect('login_view')
+                    messages.error(request, "Invalid credentials")
+                    return redirect("login_view")
 
-        elif verification_type == 'forgot_password':
-                new_password = request.POST.get('new_password')  # Retrieve the new password from the form
+            elif verification_type == "forgot_password":
+                return redirect("confirm_password")
 
-                try:
-                    user = User.objects.get(id=user_id, email=email)
-                    user.set_password(new_password)
-                    user.save()
-                    messages.success(request, 'Password updated successfully!')
-                    
-                    return redirect('forgot_password')  # Redirect to login page for forgot_password
+            elif verification_type == "profile_forget_password":
+                return redirect("profile_confrim_password")
 
-                except User.DoesNotExist:
-                    messages.error(request, 'User does not exist.')
-                    return redirect('login_view')  # Redirect to login page for forgot_password
-
-                except Exception as e:
-                    messages.error(request, f'Error updating password: {e}')
-
+            request.session.clear()
+            return redirect("login_view")
         else:
             messages.error(request, "Invalid OTP. Please try again.")
-            return render(request, 'accounts/otp_verification.html', {"email": email})
+            return render(
+                request,
+                "accounts/verify_otp.html",
+                {"email": request.session.get("email")},
+            )
 
-    # Handle GET requests by rendering the OTP verification form
-    return render(request, 'accounts/otp_verification.html', {"email": request.session.get('email')})
-
+    return render(request, "acconts/login_view.html")
 
 
 def resend_otp(request):
     new_otp = "".join([str(random.randint(0, 9)) for _ in range(4)])
-    print("New OTP:", new_otp)
-    email = request.session.get('email')
-    send_mail("New OTP for Sign Up", new_otp, 'bisherp2@gmail.com', [email], fail_silently=False)
-    request.session['otp'] = new_otp
-    print("Resending OTP...")
-
-# ... (other views)
+    print(new_otp)
+    email = request.session.get("email")
+    send_mail(
+        "New OTP for Sign Up",
+        new_otp,
+        "bisherp2@gmail.com",
+        [email],
+        fail_silently=False,
+    )
+    request.session["otp"] = new_otp
+    return redirect("otp_page")
 
 
 

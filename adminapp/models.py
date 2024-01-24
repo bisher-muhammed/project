@@ -1,7 +1,8 @@
+from datetime import date, datetime
 from django.db import models
 from django.core.validators import MinValueValidator
 from django.contrib.auth.models import User
-from django.db.models import F, Sum
+from django.db.models import F, Sum, Max
 from image_cropping import ImageRatioField, ImageCropField
 from django.utils import timezone
 
@@ -63,6 +64,25 @@ class Product(models.Model):
         return self.product_name
     
 
+    def get_best_offer(self):
+        category_offers = Offer.objects.filter(category=self.category)
+        product_offer = self.productoffer_set.first()
+
+        best_category_offer = category_offers.aggregate(Max('percentage'))['percentage__max']
+
+        if product_offer and (not best_category_offer or product_offer.percentage > best_category_offer):
+            # If product offer exists and is greater than the best category offer
+            return product_offer
+        elif category_offers:
+            # If category offers exist, return the best one
+            return category_offers.filter(percentage=best_category_offer).first()
+        else:
+            # No offers exist
+            return None
+
+    
+    
+
 class Coupon(models.Model):
     coupon_code = models.CharField(max_length=50,unique=True)
     discount_amount = models.PositiveIntegerField()
@@ -86,15 +106,44 @@ class Banner(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     days_difference = models.IntegerField(null=True, blank=True) 
+    expiry_date = models.DateField()
 
     def __str__(self):
         return self.title
     
 
+
+    
+    def calculate_days_difference(self):
+        if self.created_at and self.expiry_date:
+            if isinstance(self.expiry_date, date):
+                # Check if self.expiry_date is a valid datetime.date object
+                now = timezone.now().date()
+                self.days_difference = (self.expiry_date - now).days
+                self.is_active = self.days_difference >= 0
+            else:
+                raise ValueError("Invalid type for expiry_date. Expected datetime.date.")
+        else:
+            self.days_difference = 0
+            self.is_active = False  # Set is_active to False if there's no expiry_date
+
     def save(self, *args, **kwargs):
-            self.days_difference = (timezone.now() - self.created_at).days
-            print(f"Banner ID: {self.id}, Days Difference: {self.days_difference}")
-            super().save(*args, **kwargs)    
+        if not self.created_at:
+            self.created_at = timezone.now()
+
+        # Convert self.expiry_date to a datetime.date object if it's a string
+        if isinstance(self.expiry_date, str):
+            self.expiry_date = datetime.strptime(self.expiry_date, '%Y-%m-%d').date()
+
+        self.calculate_days_difference()
+
+        print(f"Before saving - Title: {self.title}, is_active: {self.is_active}")
+
+        super().save(*args, **kwargs)
+
+        print(f"After saving - Title: {self.title}, is_active: {self.is_active}")
+
+ 
 
 
 class Offer(models.Model):
@@ -102,9 +151,14 @@ class Offer(models.Model):
     percentage = models.DecimalField(max_digits=5, decimal_places=2)
     expiry_date = models.DateField()
     
-    
-
-    
-
     def __str__(self):
         return f"Offer for {self.category.category_name}" 
+
+
+class ProductOffer(models.Model):
+    product = models.ForeignKey('Product', on_delete=models.CASCADE)
+    percentage = models.DecimalField(max_digits=5, decimal_places=2)
+    expiry_date = models.DateField()
+
+    def __str__(self):
+        return f"Offer for {self.product.product_name}"

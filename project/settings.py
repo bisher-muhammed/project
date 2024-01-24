@@ -91,7 +91,7 @@ DATABASES = {
 
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'human',
+        'NAME': 'shoes',
         'USER': 'postgres',
         'PASSWORD': '8086',
         'HOST': 'localhost',
@@ -146,6 +146,12 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+AUTHENTICATION_BACKENDS = [
+    'user.backend.EmailBackend',
+    'django.contrib.auth.backends.ModelBackend',
+    # 'allauth.account.auth_backends.AuthenticationBackend',
+]
+
 
 
 # settings.py
@@ -159,3 +165,4 @@ EMAIL_PORT=587
 
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.db' 
+

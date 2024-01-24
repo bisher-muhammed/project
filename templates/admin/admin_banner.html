@@ -83,18 +83,18 @@
                                 <p class="card-text">Sub Title: {{ banner.subtitle }}</p>
                             </div>
                             <td>
-                {% if banner.is_active %}
-                    <form method="post" action="{% url 'banner_blocked' banner_id=banner.id %}">
-                        {% csrf_token %}
-                        <button class="btn btn-danger btn-sm btn-rounded" type="submit">Unlist</button>
-                    </form>
-                {% else %}
-                    <form method="post" action="{% url 'banner_active' banner_id=banner.id %}">
-                        {% csrf_token %}
-                        <button class="btn btn-success btn-sm btn-rounded" type="submit" style="background-color: #83B08A;">List</button>
-                    </form>
-                {% endif %}
-            </td>
+                                {% if banner.is_active %}
+                                <form method="post" action="{% url 'banner_blocked' banner_id=banner.id %}">
+                                    {% csrf_token %}
+                                    <button class="btn btn-danger btn-sm btn-rounded" type="submit">Unlist</button>
+                                </form>
+                                {% else %}
+                                <form method="post" action="{% url 'banner_active' banner_id=banner.id %}">
+                                    {% csrf_token %}
+                                    <button class="btn btn-success btn-sm btn-rounded" type="submit" style="background-color: #83B08A;">List</button>
+                                </form>
+                                {%endif%}
+                            </td>
                         </div>
                     </div>
                 {% endfor %}
@@ -118,6 +118,9 @@
         
                                         <label class="form-label">Sub Title</label>
                                         <input class="form-control" type="text" name="sub_title">
+
+                                        <label class="form-label">Expiry Date</label>
+                                        <input class="form-control" type="date" name="expiry_date">
                                     </div>
                                     <button class="btn btn-primary" type="submit">Save</button>
                                 </div>

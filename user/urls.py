@@ -4,10 +4,13 @@ from .import views
 
 urlpatterns = [
     path('',views.home,name='home'),
+
+    path('otp_page/',views.otp_page,name='otp_page'),
     path('login_view/', views.login_view, name='login_view'),
     path('signup_view/',views.signup_view, name='signup_view'),
     path('send_otp/',views.send_otp, name='send_otp'),
-    path('otp_verification/',views.otp_verification, name='otp_verification'),
+    path('verify_otp/',views.verify_otp,name='verify_otp'),
+    # path('otp_verification/',views.otp_verification, name='otp_verification'),
     path('logout_view/',views.logout_view, name='logout_view'),
     path('product_list/', views.product_list, name='product_list'),
     path('product_detials/<int:product_id>/',views.product_detials, name='product_detials'),
@@ -34,6 +37,7 @@ urlpatterns = [
     # path('reason_view/<int:order_id>/', views.reason_view, name='reason_view'),
     path('filter/<str:category_name>/',views. filter_products_by_category, name='filter_products_by_category'),
     path('filter_brand/<str:brand_name>/',views. filter_products_by_brand, name='filter_products_by_brand'),
+
     
 
 

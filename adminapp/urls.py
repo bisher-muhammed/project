@@ -35,6 +35,7 @@ urlpatterns = [
     path('edit_banner/<int:banner_id>/',views.edit_banner, name="edit_banner"),
     path('banner_active/<int:banner_id>/',views.banner_active,name='banner_active'),
     path('banner_blocked/<int:banner_id>/', views.banner_blocked, name='banner_blocked'),
+
     path('salesreport/',views.salesreport,name='salesreport'),
     path('category_offer/', views.category_offer, name='category_offer'),
     path('offer_product/',views.offer_product,name='offer_product')

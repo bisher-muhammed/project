@@ -43,6 +43,32 @@
                     </div>
                 </form>
             </div>
-        </div>
-    </section>
-{% endblock content %}
+
+            <h3>Products with Offers</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Product Name</th>
+                        <th>Offer Percentage</th>
+                        <th>Expiry Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products_with_offers %}
+                        <tr>
+                            <td>{{ product.product_name }}</td>
+                            {% if product.productoffer_set.all %}
+                                {% for offer in product.productoffer_set.all %}
+                                    <td>{{ offer.percentage }}%</td>
+                                    <td>{{ offer.expiry_date|date:"F d, Y" }}</td>
+                                {% endfor %}
+                            {% else %}
+                                <td colspan="2">No offer currently available</td>
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+    {% endblock content %} 
+    

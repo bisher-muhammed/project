@@ -6,7 +6,7 @@ from django.views.decorators.http import require_POST, require_GET
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Sum,F, DecimalField
-from .models import Category, Brand, Size, Color, Product,Coupon,Offer
+from .models import Category, Brand, ProductOffer, Size, Color, Product,Coupon,Offer
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import ValidationError
@@ -23,6 +23,7 @@ from PIL import Image
 from.models import Banner
 from datetime import datetime, timedelta
 from core.models import *
+from django.db.models import Max
 
 from django.http import HttpResponse
 from django.contrib import messages
@@ -759,33 +760,42 @@ def admin_banner(request):
     if not request.user.is_superuser:
         return redirect("admin_login")
 
+    # Set a maximum limit for creating banners
+    max_banner_limit = 10
+
     banners = Banner.objects.all()
+
     for banner in banners:
-        # Calculate days difference
-        banner.days_difference = (timezone.now() - banner.created_at).days
-        print(f"Banner ID: {banner.id}, Created At: {banner.created_at}, Days Difference: {banner.days_difference}")
+        banner.calculate_days_difference()
+        print(f"Banner: {banner.title}, Expiry Date: {banner.expiry_date}, Days Difference: {banner.days_difference}")
 
-        # Deactivate banner if more than 7 days
-        if banner.days_difference >= 7 and banner.active:
+        # Deactivate banner if more than expiry_date days
+        if banner.expiry_date and banner.days_difference < 0 and banner.is_active:
+            print(f"Deactivating banner: {banner.title}")
             banner.is_active = False
+            print(f"Status of banner {banner.title} after deactivation: is_active={banner.is_active}")
             banner.save()
 
-    if request.method == 'POST':
-        banner_image = request.FILES.get('image')
-        title = request.POST.get('title')
-        subtitle = request.POST.get('sub_title')
+    # Check the banner limit outside the loop
+    if banners.count() >= max_banner_limit:
+        messages.error(request, f"Cannot create more than {max_banner_limit} banners.")
+    else:
+        if request.method == 'POST':
+            banner_image = request.FILES.get('image')
+            title = request.POST.get('title')
+            subtitle = request.POST.get('sub_title')
+            expiry_date = request.POST.get('expiry_date')
 
-        if not all([banner_image, title, subtitle]):
-            messages.error(request, "Please provide all the required fields")
-        else:
-            banner = Banner(banner_img=banner_image, title=title, subtitle=subtitle)
-            banner.save()
-
-            # Calculate days difference for the newly created banner
-            banner.days_difference = (timezone.now() - banner.created_at).days
-            banner.save()
-
-            return redirect('admin_banner')
+            if not all([banner_image, title, subtitle, expiry_date]):
+                messages.error(request, "Please provide all the required fields")
+            else:
+                banner = Banner(
+                    banner_img=banner_image,
+                    title=title,
+                    subtitle=subtitle,
+                    expiry_date=expiry_date
+                )
+                banner.save()
 
     context = {"banners": banners}
     return render(request, "admin/admin_banner.html", context)
@@ -794,17 +804,25 @@ def admin_banner(request):
 def edit_banner(request, banner_id):
     banner = Banner.objects.get(id=banner_id)
     
-    if request.method == "POST":  # Corrected to lowercase "post"
+    if request.method == "POST":
         banner_img = request.FILES.get('image')
         title = request.POST.get('title')
-        subtitle = request.POST.get('sub_title')  # Corrected to match HTML form field name
+        subtitle = request.POST.get('sub_title')
+        expiry_date = request.POST.get('expiry_date')
 
-        if not all([banner_img, title, subtitle]):
+        if not all([banner_img, title, subtitle, expiry_date]):
             messages.error(request, "Please provide all the required fields.")
         else:
+            # Validate expiry date
+            expiry_date = datetime.strptime(expiry_date, '%Y-%m-%d').date()
+            if expiry_date <= timezone.now().date():
+                messages.error(request, 'Please provide a valid future expiration date')
+                return redirect('edit_banner', banner_id=banner_id)
+
             banner.banner_img = banner_img
             banner.title = title
             banner.subtitle = subtitle
+            banner.expiry_date = expiry_date
             banner.save()
 
             messages.success(request, "Banner updated successfully")
@@ -814,7 +832,8 @@ def edit_banner(request, banner_id):
         "banner": banner,
     }
         
-    return render(request, 'admin/edit_banner.html', context) 
+    return render(request, 'admin/edit_banner.html', context)
+
 
 
 def banner_active(request, banner_id):
@@ -884,8 +903,8 @@ from django.http import HttpResponseBadRequest
 def category_offer(request):
     print("Inside category_offer view")
     print(request.POST)
-    products=Product.objects.filter(is_active=True)
-
+    
+    products = Product.objects.filter(is_active=True)
     categories = Category.objects.filter(is_blocked=True)
     selected_category = None
     applied_offer = None
@@ -912,47 +931,37 @@ def category_offer(request):
 
             try:
                 # Get the existing offer or create a new one for the selected category
-                offer = Offer.objects.get(category=selected_category)
-            except Offer.DoesNotExist:
-                offer = Offer(category=selected_category)
+                category_offer, created = Offer.objects.get_or_create(category=selected_category, defaults={'percentage': 0, 'expiry_date': timezone.now()})
+                category_offer.percentage = float(offer_percentage) if offer_percentage else 0.0
+                category_offer.expiry_date = expiry_date
+                category_offer.save()
 
-            offer.percentage = float(offer_percentage) if offer_percentage else 0.0
-            offer.expiry_date = expiry_date
-
-            try:
-                offer.save()
             except IntegrityError as e:
                 print(f"Error saving offer: {e}")
 
-            print(f"Offer Saved: {offer}")
-            discounted_price = 0.0
-
+            print(f"Offer Saved: {category_offer}")
+            
             # Update product prices in the selected category
             products_in_category = Product.objects.filter(category=selected_category, is_active=True)
-            print("Number of products:", products_in_category.count())
-            print("Before the loop")
-            print("Selected Category ID:", selected_category.id)
-            print("Selected Category Name:", selected_category.category_name)
 
             for product in products_in_category:
-                discounted_price = product.original_price - (product.original_price * (offer.percentage / 100))
-                print(f"Product: {product.product_name}, Original Price: {product.original_price}, Discounted Price: {discounted_price}")
-                product.offer_price = discounted_price
-                print("Products in Category Queryset:", products_in_category)
-                product.save()
-                print(f"Product: {product. product_name }, Original Price: {product.original_price}, Discounted Price: {discounted_price}")
+                product_offer = ProductOffer.objects.filter(product=product).first()
+                best_offer = category_offer if not product_offer or category_offer.percentage > product_offer.percentage else product_offer
 
-            applied_offer = offer
-            print('discounted_price:', discounted_price)
-            print('offer_price')
-
-            if applied_offer and applied_offer.expiry_date and applied_offer.expiry_date<timezone.now().date():
-                print(f"the offer for {applied_offer.category.category_name} has expired.")
-                for product in products_in_category:
-                    products.offer_price=None
+                if best_offer:
+                    discounted_price = product.original_price - (product.original_price * (best_offer.percentage / 100))
+                    print(f"Product: {product.product_name}, Original Price: {product.original_price}, Discounted Price: {discounted_price}")
+                    product.offer_price = discounted_price
                     product.save()
 
+            applied_offer = category_offer
+            print('Applied Offer:', applied_offer)
 
+            if applied_offer and applied_offer.expiry_date and applied_offer.expiry_date < timezone.now().date():
+                print(f"The offer for {applied_offer.category.category_name} has expired.")
+                for product in products_in_category:
+                    product.offer_price = None
+                    product.save()
 
     context = {
         'categories': categories,
@@ -964,13 +973,12 @@ def category_offer(request):
     return render(request, 'admin/category_offer.html', context)
 
 
-
-
-
 def offer_product(request):
+    products = Product.objects.filter(is_active=True)
+
     if request.method == 'POST':
         product_id = request.POST.get('product')
-        offer_percentage = request.POST.get('offer_percentage')
+        offer_percentage = request.POST.get('offer_percentage', 0)
         expiry_date = request.POST.get('expiry_date')
 
         try:
@@ -978,37 +986,44 @@ def offer_product(request):
         except Product.DoesNotExist:
             messages.error(request, 'Invalid product selected')
             return redirect('offer_product')
-        
+
         expiry_date = datetime.strptime(expiry_date, '%Y-%m-%d').date()
-        
 
         if expiry_date <= timezone.now().date():
             messages.error(request, 'Please provide a valid expiry date')
-        else:
-            try:
-                offer, created = Offer.objects.get_or_create(product=product)
-            except IntegrityError as e:
-                messages.error(request, f"Error creating or updating offer: {e}")
+            return redirect('offer_product')
 
-            offer.percentage = float(offer_percentage) if offer_percentage else 0.0
-            offer.expiry_date = expiry_date
+        try:
+            # Get the existing offer or create a new one for the selected product
+            product_offer, created = ProductOffer.objects.get_or_create(product=product, defaults={'percentage': 0, 'expiry_date': timezone.now()})
+            product_offer_percentage = float(offer_percentage) if offer_percentage is not None else 0
+            product_offer.percentage = product_offer_percentage
+            product_offer.expiry_date = expiry_date
+            product_offer.save()
 
-            try:
-                offer.save()
-            except IntegrityError as e:
-                messages.error(request, f"Error saving offer: {e}")
+            # Calculate and update discounted price
+            best_offer = product.productoffer_set.first()
 
-            discounted_price = product.original_price - (product.original_price * (offer.percentage / 100))
-            product.offer_price = discounted_price
-            product.save()
+            if hasattr(product.category, 'offer_set'):
+                best_category_offer = product.category.offer_set.aggregate(Max('percentage'))['percentage__max']
+                best_offer = product_offer if not best_category_offer or product_offer.percentage > best_category_offer else product_offer
+
+            if best_offer:
+                discounted_price = product.original_price - (product.original_price * (best_offer.percentage / 100))
+                Product.objects.filter(pk=product_id, is_active=True).update(offer_price=discounted_price)
 
             messages.success(request, 'Offer applied successfully')
 
-            return redirect('offer_product')
+        except IntegrityError as e:
+            messages.error(request, f"Error creating or updating offer: {e}")
+            print(f"Error: {e}")
+            print(f"product_id: {product_id}, offer_percentage: {offer_percentage}, expiry_date: {expiry_date}")
 
-    products = Product.objects.filter(is_active=True)
-    return render(request, 'admin/offer_product.html', {'products': products})
+        return redirect('offer_product')
 
+    products_with_offers = Product.objects.filter(productoffer__isnull=False)
+
+    return render(request, 'admin/offer_product.html', {'products': products, 'products_with_offers': products_with_offers})
     
 
 
