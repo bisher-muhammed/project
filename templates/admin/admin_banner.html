@@ -82,8 +82,8 @@
                                 <h5 class="card-title">Title: {{ banner.title }}</h5>
                                 <p class="card-text">Sub Title: {{ banner.subtitle }}</p>
                             </div>
-                            <td>
-                                {% if banner.is_active %}
+                            {% comment %} <td>
+                                {% comment %} {% if banner.is_active %}
                                 <form method="post" action="{% url 'banner_blocked' banner_id=banner.id %}">
                                     {% csrf_token %}
                                     <button class="btn btn-danger btn-sm btn-rounded" type="submit">Unlist</button>
@@ -93,8 +93,8 @@
                                     {% csrf_token %}
                                     <button class="btn btn-success btn-sm btn-rounded" type="submit" style="background-color: #83B08A;">List</button>
                                 </form>
-                                {%endif%}
-                            </td>
+                                {%endif%} {% endcomment %}
+                            </td> {% endcomment %}
                         </div>
                     </div>
                 {% endfor %}

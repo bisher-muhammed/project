@@ -734,8 +734,9 @@ from django.shortcuts import render
 from django.db.models import Sum, DecimalField
 from django.http import HttpResponseServerError
 from decimal import Decimal
+from django.db import IntegrityError
 
-
+@login_required
 def wallet(request):
     # Fetch the list of orders for the user
     order_list = Order.objects.filter(user=request.user).order_by('-created_at')
@@ -744,7 +745,17 @@ def wallet(request):
     user_profile, created = UserProfile.objects.get_or_create(user=request.user)
 
     # Try to get the user's wallet or create one if it doesn't exist
-    user_wallet, created = Wallet.objects.get_or_create(user_profile=user_profile)
+    try:
+        user_wallet = Wallet.objects.get(user_profile=user_profile)
+    except Wallet.DoesNotExist:
+        try:
+            user_wallet = Wallet.objects.create(user_profile=user_profile, user=request.user)
+        except IntegrityError:
+            # Handle IntegrityError, in case another thread created the wallet at the same time
+            user_wallet = Wallet.objects.get(user_profile=user_profile)
+
+    # Check if there are existing wallets with null user and update them
+    Wallet.objects.filter(user_profile=user_profile, user=None).update(user=request.user)
 
     # Check if the updated wallet balance is present in the session
     updated_wallet_balance = request.session.get('updated_wallet_balance', None)
@@ -916,6 +927,15 @@ def shop_lists(request):
     products = Product.objects.filter(is_active=True)
     brands = Brand.objects.filter(is_active=True)
     categories = Category.objects.filter(is_blocked=True)
+
+    search_query=request.GET.get('search','')
+    if search_query:
+
+        products = products.filter(
+            Q(product_name__icontains=search_query) |
+            Q(product_description__icontains=search_query)
+        )
+
 
     min_price = float(request.GET.get('min_price', 0))
 

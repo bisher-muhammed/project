@@ -81,7 +81,7 @@
             <button type="submit">Filter</button>
             
         </form>
-        <h2>Total_Revenwe:{{total_order_amount}}</h2>
+        <h2>Total_Revenwe:₹{{total_order_amount}}</h2>
 
         
         <table class="table">
@@ -102,7 +102,7 @@
                         <td>{{ order.order_number }}</td>
                         <td>{{ order.user.username }}</td>
                         <td>{{ order.address }}</td>
-                        <td>${{ order.order_total }}</td>
+                        <td>₹{{ order.order_total }}</td>
                         <td>{{ order.status }}</td>
                         <td>{{ order.payment_method }}</td>
                         <td>

@@ -52,7 +52,7 @@ def admin_login(request):
     
     return render(request, 'admin/admin_login.html')
 def admin_home(request):
-    if request.user.is_authenticated:
+    if request.user.is_authenticated and request.user.is_superuser:
 
         category_order_counts = (
         ProductOrder.objects
@@ -757,8 +757,7 @@ def get_order_dates(request):
 
 
 def admin_banner(request):
-    if not request.user.is_superuser:
-        return redirect("admin_login")
+
 
     # Set a maximum limit for creating banners
     max_banner_limit = 10
