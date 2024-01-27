@@ -3,9 +3,16 @@
 
 
 <html>
-  <head>
-    <link href="https://fonts.googleapis.com/css?family=Nunito+Sans:400,400i,700,900&display=swap" rel="stylesheet">
-  </head>
+  
+
+<head>
+  <link href="https://fonts.googleapis.com/css?family=Nunito+Sans:400,400i,700,900&display=swap" rel="stylesheet">
+  <script>
+      // Use replaceState to replace the current entry in the history
+      history.replaceState(null, null, '{% url "home" %}');
+  </script>
+  <script src="{% static 'user/assets/script.js' %}"></script>
+</head>
     <style>
       body {
         text-align: center;

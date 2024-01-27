@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -45,6 +46,7 @@
         .pagination {
             display: flex;
             justify-content: center;
+            margin-top: 20px;
         }
 
         .pagination a {
@@ -71,20 +73,25 @@
 <body>
     <div class="container">
         <h1>Sales Report</h1>
-        <form method="get" action="{% url 'salesreport' %}">
-            <label for="start_date">Start Date:</label>
-            <input type="date" id="start_date" name="start_date">
-        
-            <label for="end_date">End Date:</label>
-            <input type="date" id="end_date" name="end_date">
-        
-            <button type="submit">Filter</button>
-            
+        <form method="get" action="{% url 'salesreport' %}" class="mb-3">
+            <div class="row">
+                <div class="col-md-4">
+                    <label for="start_date">Start Date:</label>
+                    <input type="date" id="start_date" name="start_date" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label for="end_date">End Date:</label>
+                    <input type="date" id="end_date" name="end_date" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary">Filter</button>
+                </div>
+            </div>
         </form>
-        <h2>Total_Revenwe:₹{{total_order_amount}}</h2>
 
-        
-        <table class="table">
+        <h2>Total Revenue: ₹{{total_order_amount}}</h2>
+
+        <table class="table table-bordered">
             <thead class="thead-light">
                 <tr>
                     <th>Order Number</th>
@@ -120,8 +127,8 @@
         <div class="pagination">
             <span class="step-links">
                 {% if orders.has_previous %}
-                    <a href="?page=1">&laquo; first</a>
-                    <a href="?page={{ orders.previous_page_number }}">previous</a>
+                    <a href="?page=1" class="page-link">&laquo; first</a>
+                    <a href="?page={{ orders.previous_page_number }}" class="page-link">previous</a>
                 {% endif %}
 
                 <span class="current">
@@ -129,20 +136,25 @@
                 </span>
 
                 {% if orders.has_next %}
-                    <a href="?page={{ orders.next_page_number }}">next</a>
-                    <a href="?page={{ orders.paginator.num_pages }}">last &raquo;</a>
+                    <a href="?page={{ orders.next_page_number }}" class="page-link">next</a>
+                    <a href="?page={{ orders.paginator.num_pages }}" class="page-link">last &raquo;</a>
                 {% endif %}
             </span>
-            <button id="printButton">Download</button>
-
-            <script>
-                // Add an event listener to the button
-                document.getElementById('printButton').addEventListener('click', function() {
-                    // Trigger the print function when the button is clicked
-                    window.print();
-                });
-            </script>
+            <button id="printButton" class="btn btn-secondary">Download</button>
         </div>
     </div>
+
+    <!-- Bootstrap JS and custom scripts -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0.7/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script>
+        // Add an event listener to the button
+        document.getElementById('printButton').addEventListener('click', function() {
+            // Trigger the print function when the button is clicked
+            window.print();
+        });
+    </script>
 </body>
 </html>

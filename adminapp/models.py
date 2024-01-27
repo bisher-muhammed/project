@@ -105,8 +105,7 @@ class Banner(models.Model):
     title = models.CharField(max_length=50, blank=True, null=True) 
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    days_difference = models.IntegerField(null=True, blank=True) 
-    expiry_date = models.DateField()
+    
 
     def __str__(self):
         return self.title
@@ -114,34 +113,21 @@ class Banner(models.Model):
 
 
     
-    def calculate_days_difference(self):
-        if self.created_at and self.expiry_date:
-            if isinstance(self.expiry_date, date):
-                # Check if self.expiry_date is a valid datetime.date object
-                now = timezone.now().date()
-                self.days_difference = (self.expiry_date - now).days
-                self.is_active = self.days_difference >= 0
-            else:
-                raise ValueError("Invalid type for expiry_date. Expected datetime.date.")
-        else:
-            self.days_difference = 0
-            self.is_active = False  # Set is_active to False if there's no expiry_date
+    # def calculate_days_difference(self):
+    #     if self.created_at and self.expiry_date:
+    #         if isinstance(self.expiry_date, date):
+    #             now = timezone.now().date()
+    #             self.days_difference = (self.expiry_date - now).days
+    #             self.is_active = self.days_difference > 0
+    #         else:
+    #             raise ValueError("Invalid type for expiry_date. Expected datetime.date.")
+    #     else:
+    #         # Handle the case where either created_at or expiry_date is not set
+    #         raise ValueError("Both created_at and expiry_date must be set.")
 
-    def save(self, *args, **kwargs):
-        if not self.created_at:
-            self.created_at = timezone.now()
+    #     # Print the details, including is_active status
+    #     print(f"Banner: {self.title}, Expiry Date: {self.expiry_date}, Days Difference: {self.days_difference}, Is Active: {self.is_active}")
 
-        # Convert self.expiry_date to a datetime.date object if it's a string
-        if isinstance(self.expiry_date, str):
-            self.expiry_date = datetime.strptime(self.expiry_date, '%Y-%m-%d').date()
-
-        self.calculate_days_difference()
-
-        print(f"Before saving - Title: {self.title}, is_active: {self.is_active}")
-
-        super().save(*args, **kwargs)
-
-        print(f"After saving - Title: {self.title}, is_active: {self.is_active}")
 
  
 

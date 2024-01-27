@@ -16,7 +16,7 @@ import datetime
 from django.contrib.auth.models import User
 
 
-@login_required
+@login_required(login_url="login_view")
 def add_to_cart(request, product_id, quantity=1):
     # Get the product
     product = get_object_or_404(Product, pk=product_id)
@@ -53,11 +53,29 @@ def cart_list(request):
     return render(request, 'CART/cart_list.html', {'cart_items': cart_items})
 
 
+@login_required(login_url="login_view")
+def clear_cart(request):
+    # Get the user's active cart
+    cart = Cart.objects.filter(user=request.user, active=True).first()
+
+    if cart:
+        # Clear all cart items
+        cart.cartitem_set.all().delete()
+        # Update the cart total
+        cart.update_total()
+        messages.success(request, "Cart cleared successfully!")
+    else:
+        messages.warning(request, "No active cart found.")
+
+    return redirect('cart_list')
+
+
 def product_list(request):
     products = Product.objects.all()
     print(products)
     return render(request, 'admin/product_list.html', {'products': products})
 
+@login_required(login_url="login_view")
 def remove_cart(request, cart_item_id):
     try:
         cart_item = CartItem.objects.get(pk=cart_item_id)
@@ -75,10 +93,11 @@ def remove_cart(request, cart_item_id):
         messages.error(request, "Cart item does not belong to the current user")
         return redirect('home')
 
+def calculate_subtotal(cart_item):
+    subtotal = cart_item.quantity * cart_item.product.offer_price
+    return '₹' + format(subtotal, '.2f')
 
-@require_POST
 def cart_update(request, cart_item_id):
-    print("hsqgshdgjq",cart_item_id)
     cart_item = get_object_or_404(CartItem, id=cart_item_id, cart__user=request.user)
     
     action = request.POST.get('action')
@@ -89,15 +108,12 @@ def cart_update(request, cart_item_id):
         cart_item.quantity -= 1
 
     cart_item.save()
-   
 
     data = {
         'quantity': cart_item.quantity,
-        'total_price': cart_item.total_price,
-        'total_prices':cart_item.total_prices,
-
-
+        'subtotal': calculate_subtotal(cart_item),
     }
+    logger.info(f"Cart update data: {json.dumps(data)}")
     return JsonResponse(data)
 
 def calculate_cart_total(cart_items):
@@ -109,7 +125,9 @@ def calculate_cart_total(cart_items):
 # checkout view
 from django.db.models import Q
 
-@login_required
+from django.db.models import Q
+
+@login_required(login_url="login_view")
 def checkout(request):
     # Get the user's UserProfile if it exists, otherwise create one
     user_profile, created = UserProfile.objects.get_or_create(user=request.user)
@@ -188,12 +206,11 @@ def checkout(request):
 # placeorder view
 # placeorder view
 # placeorder view
-@never_cache
-def placeorder(request):
-    current_user = request.user
 
-    # Check if the user has a UserProfile
-    user_profile, created = UserProfile.objects.get_or_create(user=current_user)
+def placeorder(request):
+    if not request.user.is_authenticated:
+        return redirect("login_view")
+    current_user = request.user
 
     # Check if the user has any items in the cart
     cart_items = CartItem.objects.filter(user=current_user)
@@ -212,7 +229,7 @@ def placeorder(request):
             messages.warning(request, "Select a valid address.")
             return redirect('checkout')
 
-        # Store selected_coupon_code in the session
+        # Store the selected_coupon_code in the session
         selected_coupon_code = request.POST.get('selected_coupon_code')
         request.session['selected_coupon_code'] = selected_coupon_code
 
@@ -258,7 +275,7 @@ def placeorder(request):
         print("Selected Coupon Code in placeorder:", selected_coupon_code)
 
         # Remove the selected_coupon_code from the session after placing the order
-        del request.session['selected_coupon_code']
+        # del request.session['selected_coupon_code']
 
         context = {
             'order': order,
@@ -272,36 +289,44 @@ def placeorder(request):
             'selected_coupon_code': selected_coupon_code,
         }
 
+        # Check if the user has already used the coupon
+        if coupon_instance and coupon_instance.used_by.filter(id=current_user.id).exists():
+            messages.error(request, "You have already used this coupon.")
+            return redirect('checkout')
+
+        # Remove the used coupon from the user's coupon list
+        if coupon_instance:
+            coupon_instance.used_by.add(current_user)
+
         return redirect('payments', order_id=order.id)
     
     # Redirect to the checkout page if the request method is not POST
     return redirect('checkout')
 
 # payments view
+
+# payments view
+from django.views.decorators.http import require_http_methods
+@require_http_methods(["GET", "POST"])
 def payments(request, order_id):
     current_user = request.user
     cart_items = CartItem.objects.filter(user=current_user)
     cart_count = cart_items.count()
-    grand_total = sum(cart_item.product.offer_price * cart_item.quantity for cart_item in cart_items)
 
+    # Fetch the order and related details
     order = Order.objects.get(user=current_user, is_ordered=False, id=order_id)
+    address = order.address
+    grand_total = order.order_total  # Use the order_total from the Order model
 
-    try:
-        address = order.address
-    except Order.DoesNotExist:
-        return redirect('payments')
-    
+    # Retrieve discount_amount from the session
     discount_amount = request.session.get('discount_amount', 0)
+
+    # Calculate the price_value
     price_value = grand_total - discount_amount
+
+    # Retrieve other details like selected_coupon_code, quantity, etc.
     selected_coupon_code = request.session.get('selected_coupon_code', '')
     quantity = request.GET.get('quantity', '')
-
-
-
-    print("Grand Total in payments:", grand_total)
-    print("Discount Amount in payments:", discount_amount)
-    print("Price Value in payments:", price_value)
-    print("Selected Coupon Code in payments:", selected_coupon_code)
 
     context = {
         'address': address,
@@ -311,14 +336,16 @@ def payments(request, order_id):
         'grand_total': grand_total,
         'selected_address': address,
         'discount_amount': discount_amount,
-        'price_value': price_value,
+        'price_value': price_value,  # Use the calculated price_value
         'selected_coupon_code': selected_coupon_code,
         'quantity': quantity,
     }
     
-    
 
     return render(request, 'CART/placeorder.html', context)
+
+
+
 
 
 
@@ -371,7 +398,7 @@ def cash_on_delivery(request, order_id):
     return redirect('order_confirmed', order_id=order_id)
 
 
-
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
 def order_confirmed(request, order_id):
     order = get_object_or_404(Order, id=order_id, is_ordered=True)
     order_products = ProductOrder.objects.filter(user=request.user, order=order)
@@ -401,11 +428,15 @@ def order_confirmed(request, order_id):
     
     if 'some_key_to_clear' in request.session:
         del request.session['some_key_to_clear']
+        request.session.clear()
+        
 
     return render(request, 'CART/order_confirmed.html', context)
 def coupon_list(request):
 
     coupon_list = Coupon.objects.filter(is_blocked=True)
+   
+
     return render(request, 'admin/coupon_management.html', {'coupon_list': coupon_list,})
 
 # views.py
@@ -554,4 +585,30 @@ def wallet_pay(request, order_id):
     # Redirect to 'order_confirmed' with necessary parameters
     return redirect('order_confirmed', order_id=order_id)
 
+
+
+def add_to_cart_from_wishlist(request, product_id, quantity=1):
+    product = get_object_or_404(Product, id=product_id)
+
+    # Get or create the user's active cart
+    cart, created = Cart.objects.get_or_create(user=request.user, active=True)
+
+    # Check if the product is already in the cart
+    cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product, defaults={'user': request.user})
+
+    if not created:
+        # If the product is already in the cart, update the quantity
+        cart_item.quantity += quantity
+    else:
+        # If the product is not in the cart, create a new cart item with the given quantity
+        cart_item.quantity = quantity
+
+    cart_item.price = cart_item.quantity * cart_item.product.offer_price
+    cart_item.save()
+
+    cart.update_total()
+
+    messages.success(request, f"{product.product_name} added to your cart!")
+
+    return redirect('wishlist')  
 

@@ -17,7 +17,10 @@ urlpatterns = [
     path('cash_on_delivery/<int:order_id>/',views.cash_on_delivery,name='cash_on_delivery'),
     path('core/order_confirmed/<int:order_id>/',views.order_confirmed, name='order_confirmed'),
     path('confirm_razorpay_payment/<int:order_id>/', views.confirm_razorpay_payment, name='confirm_razorpay_payment'),
+    path('clear_cart/',views.clear_cart, name='clear_cart'),
     path('wallet_pay/<int:order_id>/',views.wallet_pay,name='wallet_pay'),
+    path('add-to-cart-from-wishlist/<int:product_id>/', views.add_to_cart_from_wishlist, name='add_to_cart_from_wishlist'),
+    path('calculate_subtotal/',views.calculate_subtotal,name='calculate_subtotal'),
     
 
 

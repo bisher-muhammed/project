@@ -106,6 +106,30 @@ def admin_home(request):
             .order_by('year')
         )
 
+        latest_orders = (
+            Order.objects.select_related('user', 'address', 'coupon', 'cart__user')
+            .prefetch_related('productorder_set__product', 'productorder_set__cart_item__product')
+            [:10]  # Adjust the number as needed
+        )
+
+        for order in latest_orders:
+            # ...
+            payment_data = Payment.objects.filter(user=order.user, created_at__gte=order.created_at).first()
+            order.payment_method = payment_data.payment_method if payment_data else 'N/A'
+
+        total_order_amount = latest_orders.aggregate(total_order_amount=Sum('order_total'))['total_order_amount']
+
+        # Pagination
+        page = request.GET.get('page', 1)
+        paginator = Paginator(latest_orders, 10)
+
+        try:
+            latest_orders = paginator.page(page)
+        except PageNotAnInteger:
+            latest_orders = paginator.page(1)
+        except EmptyPage:
+            latest_orders = paginator.page(paginator.num_pages)
+
         context = {
             'total_users': total_users,
             'total_products': total_products,
@@ -120,8 +144,7 @@ def admin_home(request):
             'yearly_orders': yearly_orders,
             'category_labels': category_labels,
             'order_counts': order_counts,
-
-            
+            'latest_orders': latest_orders,
         }
 
         return render(request, 'admin/admin_home.html', context)
@@ -602,11 +625,23 @@ def deactivate_user(request, user_id):
 
 
 def admin_order(request):
-    orders = Order.objects.all()
-    product_orders = ProductOrder.objects.filter(order__in=orders)
-    total_orders = Order.objects.count()
+    # Order the orders by the most recent ones
+    orders = Order.objects.all().order_by('-created_at')
     
-    return render(request, 'admin/admin_order.html', {'orders': orders, 'product_orders': product_orders,'total_orders':total_orders})
+    # Pagination
+    paginator = Paginator(orders, 10)  # Show 10 orders per page
+    page = request.GET.get('page', 1)
+
+    try:
+        paginated_orders = paginator.page(page)
+    except PageNotAnInteger:
+        paginated_orders = paginator.page(1)
+    except EmptyPage:
+        paginated_orders = paginator.page(paginator.num_pages)
+
+    total_orders = Order.objects.count()
+
+    return render(request, 'admin/admin_order.html', {'orders': paginated_orders, 'total_orders': total_orders})
 
 # views.py
 
@@ -757,23 +792,10 @@ def get_order_dates(request):
 
 
 def admin_banner(request):
-
-
     # Set a maximum limit for creating banners
     max_banner_limit = 10
 
     banners = Banner.objects.all()
-
-    for banner in banners:
-        banner.calculate_days_difference()
-        print(f"Banner: {banner.title}, Expiry Date: {banner.expiry_date}, Days Difference: {banner.days_difference}")
-
-        # Deactivate banner if more than expiry_date days
-        if banner.expiry_date and banner.days_difference < 0 and banner.is_active:
-            print(f"Deactivating banner: {banner.title}")
-            banner.is_active = False
-            print(f"Status of banner {banner.title} after deactivation: is_active={banner.is_active}")
-            banner.save()
 
     # Check the banner limit outside the loop
     if banners.count() >= max_banner_limit:
@@ -783,22 +805,19 @@ def admin_banner(request):
             banner_image = request.FILES.get('image')
             title = request.POST.get('title')
             subtitle = request.POST.get('sub_title')
-            expiry_date = request.POST.get('expiry_date')
 
-            if not all([banner_image, title, subtitle, expiry_date]):
+            if not all([banner_image, title, subtitle]):
                 messages.error(request, "Please provide all the required fields")
             else:
                 banner = Banner(
                     banner_img=banner_image,
                     title=title,
                     subtitle=subtitle,
-                    expiry_date=expiry_date
                 )
                 banner.save()
 
     context = {"banners": banners}
     return render(request, "admin/admin_banner.html", context)
-
 
 def edit_banner(request, banner_id):
     banner = Banner.objects.get(id=banner_id)
@@ -807,53 +826,45 @@ def edit_banner(request, banner_id):
         banner_img = request.FILES.get('image')
         title = request.POST.get('title')
         subtitle = request.POST.get('sub_title')
-        expiry_date = request.POST.get('expiry_date')
 
-        if not all([banner_img, title, subtitle, expiry_date]):
+        if not all([banner_img, title, subtitle]):
             messages.error(request, "Please provide all the required fields.")
         else:
-            # Validate expiry date
-            expiry_date = datetime.strptime(expiry_date, '%Y-%m-%d').date()
-            if expiry_date <= timezone.now().date():
-                messages.error(request, 'Please provide a valid future expiration date')
-                return redirect('edit_banner', banner_id=banner_id)
-
             banner.banner_img = banner_img
             banner.title = title
             banner.subtitle = subtitle
-            banner.expiry_date = expiry_date
             banner.save()
 
             messages.success(request, "Banner updated successfully")
             return redirect("admin_banner")
 
-    context = {
-        "banner": banner,
-    }
-        
+    context = {"banner": banner}
     return render(request, 'admin/edit_banner.html', context)
-
 
 
 def banner_active(request, banner_id):
     try:
         banner = Banner.objects.get(id=banner_id)
+        print(f"Activating banner: {banner.title}")
         banner.is_active = True
         banner.save()
         messages.success(request, 'Listed successfully.')
     except Banner.DoesNotExist:
         messages.error(request, 'Banner not found.')
+        print(f"Banner not found with ID: {banner_id}")
     return redirect('admin_banner')
 
 
 def banner_blocked(request, banner_id):
     try:
         banner = Banner.objects.get(id=banner_id)
+        print(f"Blocking banner: {banner.title}")
         banner.is_active = False
         banner.save()
         messages.success(request, 'Unlisted successfully.')
     except Banner.DoesNotExist:
         messages.error(request, 'Banner not found.')
+        print(f"Banner not found with ID: {banner_id}")
     return redirect('admin_banner')
 
 

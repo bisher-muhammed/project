@@ -4,72 +4,63 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&display=swap">
 
 <style>
+    /* Overall Styling */
     body {
-        font-family: 'Raleway', sans-serif;
+        font-family: 'Open Sans', sans-serif;
+        background-color: #f8f9fa;
         color: #333;
     }
 
-    h1, h2, h3, h4, h5, h6 {
-        font-family: 'Raleway', sans-serif;
-        font-weight: 600;
-        color: #ff6347;
-        text-decoration: underline;
-        text-decoration-color: #ff6347;
-        font-size: 15px;
-    }
-    .h4{
-        padding-right:10px;
+    /* Heading Styles */
+    .billing-details-heading,
+    .checkout-heading,
+    .choose-address-heading {
+        font-size: 20px;
+        font-weight: bold;
+        margin-bottom: 15px;
     }
 
-    .coupon-form {
-        background-color: #f8f8f8;
+    /* Coupon Section Styles */
+    .toggle_info {
+        margin-bottom: 30px;
+    }
+
+    /* Billing Details Section Styles */
+    .billing-details-section {
         padding: 20px;
-        border-radius: 8px;
-    }
-
-    .billing-details-form {
+        background-color: #fff;
         border: 1px solid #ddd;
-        padding: 20px;
-        border-radius: 8px;
-        text-align: center;
-        margin-bottom: 20px;
-    }
-
-    .shipping-address {
-        border: 1px solid #ddd;
-        padding: 20px;
-        border-radius: 8px;
-        margin-top: 20px;
-        margin-bottom: 20px;
-    }
-
-    .order-review-table {
-        background-color: #f8f8f8;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-    }
-
-    .btn-primary {
-        background-color: #007bff;
-        color: #fff;
-        border: none;
         border-radius: 5px;
-        padding: 10px 20px;
-        transition: background-color 0.3s;
+        margin-bottom: 30px;
     }
 
-    .btn-primary:hover {
-        background-color: #0056b3;
+    /* Address Section Styles */
+    .address-section {
+        margin-top: 20px;
     }
 
+    .address-box {
+        background-color: #fff;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
 
+    /* Order Review Section Styles */
+    .order-review-section {
+        background-color: #fff;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 20px;
+    }
 
-    .radio-icon {
-        width: 10px;
-        height: 10px;
-        background-color: #007fff; /* Set your desired color */
-        border-radius: 50%;
-        display: inline-block;
+    .order-table {
+        width: 100%;
+    }
+
+    .place-order-btn {
+        margin-top: 30px;
     }
 </style>
         
@@ -430,3 +421,4 @@
 
 
 {% endblock content %}
+

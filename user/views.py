@@ -33,47 +33,59 @@ from django.db.models import Q
 
 
 
-
-
+from django.db.models import Count
+@cache_control(max_age=0, no_cache=True, no_store=True, must_revalidate=True)
 @never_cache
 def home(request):
     if request.user.is_anonymous:
         return redirect('login_view')
 
-    products = Product.objects.filter(is_active=True)
-    category_list = Category.objects.all()
-    all_offers=Offer.objects.all()
-    applied_offer=Offer.objects.all()
-    banners = Banner.objects.filter(is_active=True)
-    search_query=request.GET.get('search','')
-    if search_query:
+    context = {}  # Initialize the context variable
 
+    products = Product.objects.filter(is_active=True).order_by('-offer_price')
+    category_list = Category.objects.all()
+    all_offers = Offer.objects.all()
+    brands = Brand.objects.filter(is_active=True)
+    applied_offer = Offer.objects.all()
+    banners = Banner.objects.filter(is_active=True)
+    search_query = request.GET.get('search', '')
+    
+    if search_query:
         products = products.filter(
             Q(product_name__icontains=search_query) |
             Q(product_description__icontains=search_query)
         )
 
     # Calculate days difference for each banner
-    for banner in banners:
-        banner.days_difference = (timezone.now() - banner.created_at).days
-        print(f"Banner ID: {banner.id}, Created At: {banner.created_at}, Days Difference: {banner.days_difference}")
+
+    # Fetch the most ordered products (monthly best sellers)
+    monthly_best_sellers = Product.objects.filter(
+    productorder__created_at__month=timezone.now().month,
+    productorder__ordered=True,  # Assuming there is a field named 'ordered' in ProductOrder
+    is_active=True
+).annotate(order_count=Sum('productorder__quantity')).order_by('-order_count')[:6]
+    delay_step = 0.2
+    delay_values = [i * delay_step for i in range(len(brands))]
+
     
-        
+      
 
-    if not request.user.is_active:
-        request.session.flush()
-        print(applied_offer)
-
-    
-
-    context = {
+    context.update({
         'products': products,
         'category': category_list,
         'banners': banners,
         'search_query': search_query,
         'all_offers': all_offers,
         'applied_offer': applied_offer,
-    }
+        'brands': brands,
+        'monthly_best_sellers': monthly_best_sellers,  # Fixed the update syntax here
+        'delay_values': delay_values
+    })
+
+    if not request.user.is_active:
+        request.session.flush()
+        print(applied_offer)
+
     print("Applied Offer:", applied_offer)
     for product in products:
         print(f"Product: {product.product_name}, Offer: {applied_offer}")
@@ -504,12 +516,21 @@ def category_list(request):
     return render(request, 'admin/admin_category.html', {'category_list': category_list})
 
 def product_detials(request, product_id):
+
     product = Product.objects.get(pk=product_id)
     size_options = Size.objects.filter(is_active=True)
     color_options = Color.objects.filter(is_active=True)
-    context = {'color_options': color_options, 'size_options': size_options, 'product': product}
-    
-    return render(request, 'accounts/product_detials.html', {'product': product,**context})
+
+    # Get related products with the same brand, excluding the current product
+    related_products = Product.objects.filter(brand=product.brand).exclude(id=product.id)[:4]
+
+    context = {
+        'product': product,
+        'size_options': size_options,
+        'color_options': color_options,
+        'related_products': related_products,
+    }
+    return render(request, 'accounts/product_detials.html', context)
 
 
 
@@ -631,7 +652,21 @@ def set_default_address(request, address_id):
 def order_list(request):
     # Assuming you want to fetch all orders for the logged-in user
     orders = Order.objects.filter(user=request.user).order_by('-created_at')
-    
+
+    # Set the number of orders you want to display per page
+    orders_per_page = 10
+    paginator = Paginator(orders, orders_per_page)
+
+    page = request.GET.get('page')
+    try:
+        orders = paginator.page(page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver the first page
+        orders = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g., 9999), deliver the last page
+        orders = paginator.page(paginator.num_pages)
+
     context = {
         'orders': orders,
     }
@@ -651,7 +686,7 @@ def view_order(request, order_id):
 
     return render(request, 'accounts/order_view.html',context)
 
-
+@login_required(login_url="login")
 def cancel_order(request, order_id):
     order = get_object_or_404(Order, id=order_id)
 
@@ -671,6 +706,9 @@ def cancel_order(request, order_id):
     # Redirect to the order list page
     return redirect('order_list')
 
+
+
+@login_required(login_url="login_view")
 def return_order(request, order_id):
     order = get_object_or_404(Order, id=order_id)
     order.status = "Returned"
@@ -681,7 +719,7 @@ def return_order(request, order_id):
 
     # Handle the case where the order status is not "Returned"
    
-
+@login_required(login_url="login_view")
 def add_wishlist(request, product_id):
     product = get_object_or_404(Product, pk=product_id)
 
@@ -694,19 +732,38 @@ def add_wishlist(request, product_id):
     return redirect('home')
 
 
+
+@login_required(login_url="login_view")
 def wishlist_view(request):
-    # Check if the user is authenticated
-    if request.user.is_authenticated:
-        # Get the user's profile and wishlist items
-        user_profile = UserProfile.objects.get(user=request.user)
-        wishlist_items = user_profile.wishlist.all()
+    # Get the user's profile and wishlist items
+    user_profile = UserProfile.objects.get(user=request.user)
+    wishlist_items = user_profile.wishlist.all()
 
-        # Render the wishlist template with the wishlist items
-        return render(request, 'accounts/wishlist.html', {'wishlist_items': wishlist_items})
-    else:
-        return redirect('home')
+    if request.method == 'POST':
+        # Assuming there's a form or some trigger to complete the order
+        # You might need to adjust this based on your actual implementation
+        # For example, you might have a dedicated view or endpoint for completing orders
+
+        orders = Order.objects.filter(user=request.user, is_ordered=True)
+
+        for order in orders:
+            for item in wishlist_items:
+                # Assuming you have a relationship between products in the wishlist
+                # and products in the order (e.g., matching by product id)
+                if item.product.id == order.product.id:
+                    # Delete the product from the wishlist
+                    item.delete()
+
+        messages.success(request, "Order completed successfully! Wishlist updated.")
+        return redirect('wishlist_view')
+
+    # Render the wishlist template with the wishlist items
+    return render(request, 'accounts/wishlist.html', {'wishlist_items': wishlist_items})
+
+
+
     
-
+@login_required(login_url="login_view")
 def delete_wishlist_item(request, product_id):
     user_profile = get_object_or_404(UserProfile, user=request.user)
     wishlist_item = get_object_or_404(user_profile.wishlist, pk=product_id)
@@ -772,23 +829,18 @@ def wallet(request):
         # Remove 'updated_wallet_balance' from the session
         # del request.session['updated_wallet_balance']
         # request.session.save()
-        
-        
-
     else:
         # Otherwise, calculate the total amount of returned and canceled orders
-        total_returned_amount = Order.objects.filter(user=request.user, status="Returned").aggregate(Sum('order_total'))['order_total__sum'] or Decimal('0.00')
-        total_canceled_amount = Order.objects.filter(user=request.user, status="Cancelled").aggregate(Sum('order_total'))['order_total__sum'] or Decimal('0.00')
+        total_returned_amount = Decimal(Order.objects.filter(user=request.user, status="Returned").aggregate(Sum('order_total'))['order_total__sum'] or '0.00')
+        total_canceled_amount = Decimal(Order.objects.filter(user=request.user, status="Cancelled").aggregate(Sum('order_total'))['order_total__sum'] or '0.00')
         user_wallet.balance = total_returned_amount + total_canceled_amount
         user_wallet.save()
-        
 
         # Update the wallet balance by setting it to the sum of returned and canceled amounts
         request.session['user_wallet.balance'] = str(user_wallet.balance)
         request.session.save()
         updated_wallet_balance = request.session['user_wallet.balance']
         print(updated_wallet_balance)
-
 
     # Fetch the latest wallet balance from the database
     user_wallet.refresh_from_db()
@@ -807,13 +859,9 @@ def wallet(request):
         'total_returned_amount': total_returned_amount,
         'total_canceled_amount': total_canceled_amount,
         'updated_wallet_balance': str(user_wallet.balance)
-        
     }
-    # request.session.pop('updated_wallet_balance', None)
-    # print(('updated_wallet_balance', None))
 
     return render(request, 'accounts/wallet.html', context)
-
  
 # def reason_view(request, order_id):
 #     # Implement logic for the reason_view here
@@ -1018,3 +1066,5 @@ def filter_products_by_brand(request, brand_name):
     filtered_products = brand_products.filter(offer_price__gte=min_price, offer_price__lte=max_price)
 
     return render(request, 'accounts/shop.html', {'products': filtered_products})
+
+

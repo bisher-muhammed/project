@@ -120,7 +120,7 @@
                 {% for product in products %}
                     <div class="col mb-4">
                         <div class="card h-100">
-                            <img src="{{ product.product_img1.url }}" class="card-img-top" alt="{{ product.product_name }}">
+                            <img src="{{ product.product_img1.url }}" class="card-img-top" alt="{{ product.product_name }}"style="height: 250px; object-fit: cover;">
                             <div class="card-body">
                                 <h5 class="card-title">{{ product.product_name }}</h5>
                                 <p class="card-text">{{ product.offer_price }}</p>

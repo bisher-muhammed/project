@@ -3,6 +3,7 @@ from .import views
 
 urlpatterns = [
     path('', views.admin_login, name='admin_login'),
+    
     path('admin_home/', views.admin_home, name='admin_home'),
     path('admin_category/', views.admin_category, name='admin_category'),
     path('block_category/<int:category_id>/',views.block_category, name='block_category'),
